@@ -93,12 +93,16 @@ class BaseAgent:
             self.model1_config = yaml.safe_load(f)
 
         # Resolve environment variables in api_key
-        api_key = self._resolve_env_var(self.model1_config["api_key"])
-        assert isinstance(api_key, str), "API key must be a string after resolution."
+        # api_key = self._resolve_env_var(self.model1_config["api_key"])
+        # assert isinstance(api_key, str), "API key must be a string after resolution."
 
+        # self.llm1 = OpenAI(
+        #     api_key=api_key,
+        #     base_url=self.model1_config.get("url"),
+        # )
         self.llm1 = OpenAI(
-            api_key=api_key,
-            base_url=self.model1_config.get("url"),
+            api_key=self.model1_config.get("api_key"),
+            base_url=self.model1_config.get("url")
         )
         self.model1 = self.model1_config["model"]
         self.internal_budget = internal_budget
@@ -108,12 +112,16 @@ class BaseAgent:
             self.model2_config = yaml.safe_load(f)
 
         # Resolve environment variables in api_key
-        api_key = self._resolve_env_var(self.model2_config["api_key"])
-        assert isinstance(api_key, str), "API key must be a string after resolution."
+        # api_key = self._resolve_env_var(self.model2_config["api_key"])
+        # assert isinstance(api_key, str), "API key must be a string after resolution."
 
+        # self.llm2 = OpenAI(
+        #     api_key=api_key,
+        #     base_url=self.model2_config.get("url"),
+        # )
         self.llm2 = OpenAI(
-            api_key=api_key,
-            base_url=self.model2_config.get("url"),
+            api_key=self.model2_config.get("api_key"),
+            base_url=self.model2_config.get("url")
         )
         self.model2 = self.model2_config["model"]
         if "tokenizer" in self.model2_config:

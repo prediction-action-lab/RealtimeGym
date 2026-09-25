@@ -41,10 +41,16 @@ class PlanningAgent(BaseAgent):
         if self.gen_text == "":  # check whether the last generation is finished
             messages = [{"role": "user", "content": prompt_gen}]
             prompt = messages[-1]["content"]
+            print(f"\n[PLANNING PROMPT] turn={game_turn}:")
+            print(prompt)
+            print("[END PLANNING PROMPT]\n")
         else:
             messages = []
 
         text, token_num, turn = self.planning_inference(messages, budget, game_turn)
+        print(f"\n[PLANNING RESPONSE] turn={game_turn}, guidance_turn={turn}, tokens={token_num}:")
+        print(text)
+        print("[END PLANNING RESPONSE]\n")
         temp = extract_boxed(text)
         if temp != "":
             self.plan = re.sub(r"[^" + self.prompts.ALL_ACTIONS + "]", "", temp)
@@ -61,4 +67,5 @@ class PlanningAgent(BaseAgent):
             self.logs["model2_response"].append(text)
         self.logs["model2_token_num"].append(token_num)
         self.action = self.plan[0] if self.plan != "" else self.prompts.DEFAULT_ACTION
+        print(f"[PARSED ACTION] turn={game_turn}, action={self.action}")
         self.plan = self.plan[1:] if self.plan != "" else ""

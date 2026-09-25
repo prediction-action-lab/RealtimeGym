@@ -46,6 +46,12 @@ class AgileThinker(BaseAgent):
         else:
             messages = []
         text, token_num, turn = self.planning_inference(messages, budget, game_turn)
+        print(f"\n[PLANNING PROMPT] turn={game_turn}, guidance_turn={turn}:")
+        print(prompt)
+        print("[END PLANNING PROMPT]\n")
+        print(f"\n[PLANNING RESPONSE] turn={game_turn}, guidance_turn={turn}, tokens={token_num}:")
+        print(text)
+        print("[END PLANNING RESPONSE]\n")
         self.plan = f"""**Guidance from a Previous Thinking Model:** Turn \\( t_1 = {turn} \\)\n{text}"""
         if self.log_thinking:
             self.logs["plan"].append(self.plan)
@@ -60,9 +66,16 @@ class AgileThinker(BaseAgent):
                 prompt += f"> {line.strip()}\n"
         messages = [{"role": "user", "content": prompt}]
         text, token_num = self.reactive_inference(messages, self.internal_budget)
+        print(f"\n[REACTIVE PROMPT] turn={game_turn}, guidance_turn={turn}:")
+        print(prompt)
+        print("[END REACTIVE PROMPT]\n")
+        print(f"\n[REACTIVE RESPONSE] turn={game_turn}, guidance_turn={turn}, tokens={token_num}:")
+        print(text)
+        print("[END REACTIVE RESPONSE]\n")
         self.action = re.sub(
             r"[^" + self.prompts.ALL_ACTIONS + "]", "", extract_boxed(text)
         )
+        print(f"[PARSED ACTION] turn={game_turn}, action={self.action}")
         if self.log_thinking:
             self.logs["model1_prompt"].append(prompt)
             self.logs["model1_response"].append(text)

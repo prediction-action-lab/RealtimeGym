@@ -28,3 +28,20 @@ src/realtimegym/environments/prompts
 # Personal config files with API keys
 configs/*-personal.yaml
 configs/my-*.yaml
+.DS_Store
+chtc/job_i.sub
+chtc/job.sub
+configs/example-deepseek-r1-qwen-7B-planning.yaml
+configs/example-deepseek-v3-reactive.yaml
+configs/example-deepseek-v3.2-planning.yaml
+configs/example-gemini-2.5-flash-planning.yaml
+configs/example-gemini-2.5-flash-reactive.yaml
+configs/example-gpt-5-mini-planning.yaml
+configs/example-gpt-5-mini-reactive.yaml
+src/.DS_Store
+src/realtimegym/.DS_Store
+configs/example-gpt-5-mini-reactive.yaml
+configs/example-gpt-5-mini-planning.yaml
+configs/example-gemini-2.5-flash-reactive.yaml
+configs/example-gemini-2.5-flash-planning.yaml
+configs/example-deepseek-v3.2-planning.yaml

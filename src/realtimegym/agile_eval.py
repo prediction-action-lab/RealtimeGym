@@ -151,10 +151,38 @@ def game_loop(file: str, raw_seed: int, args: argparse.Namespace) -> dict[str, A
     if render is not None:
         surfaces.append(render.render(env))
     while not done:
+        step_start = time.time()
         agent.observe(obs)
+        think_start = time.time()
         agent.think(timeout=args.time_pressure)
+        think_time = time.time() - think_start
         action = agent.act()
+        env_start = time.time()
         obs, done, reward, reset_flag = env.step(action)
+        env_step_time = time.time() - env_start
+        model1_tokens = agent.logs.get("model1_token_num", [0])[-1] if agent.logs.get("model1_token_num") else 0
+        model2_tokens = agent.logs.get("model2_token_num", [0])[-1] if agent.logs.get("model2_token_num") else 0
+        step_tokens = model1_tokens + model2_tokens
+        tokens_per_sec = step_tokens / think_time if think_time > 0 else 0.0
+        step_time = time.time() - step_start
+        print(
+            f"[STEP METRICS] "
+            f"turn={env.game_turn} "
+            f"action={action} "
+            f"reward={reward} "
+            f"reset={reset_flag} "
+            f"think_time={think_time:.3f}s "
+            f"env_step_time={env_step_time:.6f}s "
+            f"step_time={step_time:.3f}s "
+            f"tokens={step_tokens} "
+            f"tokens_per_sec={tokens_per_sec:.2f}"
+        )
+
+        agent.logs["think_time_sec"].append(think_time)
+        agent.logs["env_step_time_sec"].append(env_step_time)
+        agent.logs["total_step_time_sec"].append(step_time)
+        agent.logs["step_tokens"].append(step_tokens)
+        agent.logs["tokens_per_sec"].append(tokens_per_sec)
         env.summary()
         agent.log(reward, reset_flag)
         if render is not None:

@@ -29,7 +29,7 @@ dependencies = [
     "ipython>=7.0.0",
     "ipywidgets>=7.6.0",
     "imageio>=2.9.0",
-    "python-dotenv>=0.19.0",
+    "python-dotenv>=0.19.0"
 ]
 
 [project.optional-dependencies]
@@ -70,12 +70,14 @@ exclude = [
 # All type annotations should be added manually for better type safety
 
 [tool.ruff]
-select = ["ANN"]
 exclude = [
     # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
     # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
     "src/realtimegym/environments/overcooked_new",
 ]
+
+[tool.ruff.lint]
+select = ["ANN"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
