@@ -31,6 +31,7 @@ configs/my-*.yaml
 .DS_Store
 chtc/job_i.sub
 chtc/job.sub
+chtc/job.sh
 configs/example-deepseek-r1-qwen-7B-planning.yaml
 configs/example-deepseek-v3-reactive.yaml
 configs/example-deepseek-v3.2-planning.yaml
