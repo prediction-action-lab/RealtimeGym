@@ -33,7 +33,8 @@ find "$RESULTS/logs" -name args.log | while read -r f; do
   started=$(basename "$d" | sed -E 's/.*_([0-9]{8})_([0-9]{2})([0-9]{2})[0-9]{2}$/\1 \2:\3/')
   took=$(grep '^seed:' "$f" | sed 's/.*total_time: \([0-9.]*\).*/\1/' | sort -n | tail -1 \
          | awk '{printf "%.1fh", $1/3600}')
-  printf "  %-12s %-9s %s %6s  seeds=%s  started=%s  took=%-6s\n" "${tag:-qwen3-8b}" \
+  printf "  %-12s %-10s %-9s %s %6s  seeds=%s  started=%s  took=%-6s\n" "${tag:-qwen3-8b}" \
+    "$(grep -m1 '^game:' "$f" | awk '{print $2}')" \
     "$(grep -m1 '^mode:' "$f" | awk '{print $2}')" \
     "$(grep -m1 '^cognitive_load:' "$f" | awk '{print $2}')" \
     "$(grep -m1 '^time_pressure:' "$f" | awk '{print $2}')" \

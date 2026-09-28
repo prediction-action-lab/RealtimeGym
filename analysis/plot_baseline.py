@@ -264,14 +264,15 @@ def main():
         raise SystemExit(f"No completed runs with results under {a.logs_root}")
     os.makedirs(a.out, exist_ok=True)
 
-    models = sorted({r["model"] for r in rows})
-    lines = ["model,mode,load,time_pressure,n,reward_mean,reward_std,score_mean,score_std"]
-    for model in models:
-        mrows = [r for r in rows if r["model"] == model]
-        game = mrows[0]["game"]
+    # group by (model, game): scores use per-game Rmin/Rmax, so mixing games in
+    # one figure would average incomparable numbers
+    groups = sorted({(r["model"], r["game"]) for r in rows})
+    lines = ["model,game,mode,load,time_pressure,n,reward_mean,reward_std,score_mean,score_std"]
+    for model, game in groups:
+        mrows = [r for r in rows if r["model"] == model and r["game"] == game]
 
         # ---- summary table ----
-        print(f"\n=== {model} ===")
+        print(f"\n=== {model} · {game} ===")
         print(f"{'mode':<10} {'load':<6} {'pressure':>9} {'n':>3} {'reward':>16} {'score':>16}")
         print("-" * 68)
         buckets = {}
@@ -282,7 +283,7 @@ def main():
             sc = np.array([x["score"] for x in rs])
             print(f"{mode:<10} {load:<6} {pressure:>9} {len(rs):>3} "
                   f"{rw.mean():>8.2f} ± {rw.std():<5.2f} {sc.mean():>8.3f} ± {sc.std():<5.3f}")
-            lines.append(f"{model},{mode},{load},{pressure},{len(rs)},"
+            lines.append(f"{model},{game},{mode},{load},{pressure},{len(rs)},"
                          f"{rw.mean():.4f},{rw.std():.4f},{sc.mean():.4f},{sc.std():.4f}")
 
         # ---- figure: hold one axis fixed while sweeping the other ----
@@ -318,7 +319,7 @@ def main():
         fig.legend([handles[k] for k in keys], keys, loc="lower center",
                    ncol=min(len(keys), 4), frameon=False, bbox_to_anchor=(0.5, -0.10))
         fig.tight_layout()
-        slug = re.sub(r"[^A-Za-z0-9._-]+", "_", model)
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "_", f"{model}_{game}")
         path = os.path.join(a.out, f"score_curves_{slug}.png")
         fig.savefig(path, bbox_inches="tight")
         plt.close(fig)

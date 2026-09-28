@@ -36,3 +36,9 @@ rtg_figures/
 
 # analysis helpers are tracked despite the *.sh rule above
 !analysis/refresh.sh
+
+# committed results: configs + per-seed rewards + figures (no CSVs, no tarballs)
+!results/**/args.log
+!results/**/model.txt
+!results/figures/*.csv
+!results/figures/*.png
