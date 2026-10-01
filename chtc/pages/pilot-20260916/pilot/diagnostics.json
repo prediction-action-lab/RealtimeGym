@@ -1,0 +1,130 @@
+[
+  {
+    "episode": "pilot-freeway-M-t8192-b0-planning-e0-s0",
+    "role": "planning",
+    "calls": 34,
+    "output_tokens": 912302,
+    "mean_output_tokens": 26832.41176470588,
+    "length_limited_calls": 9
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b0-planning-e0-s1",
+    "role": "planning",
+    "calls": 32,
+    "output_tokens": 890367,
+    "mean_output_tokens": 27823.96875,
+    "length_limited_calls": 13
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b0-planning-e1-s0",
+    "role": "planning",
+    "calls": 50,
+    "output_tokens": 1107944,
+    "mean_output_tokens": 22158.88,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b0-planning-e1-s1",
+    "role": "planning",
+    "calls": 50,
+    "output_tokens": 1111131,
+    "mean_output_tokens": 22222.62,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e0-s0",
+    "role": "reactive",
+    "calls": 40,
+    "output_tokens": 46624,
+    "mean_output_tokens": 1165.6,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e0-s0",
+    "role": "planning",
+    "calls": 16,
+    "output_tokens": 313109,
+    "mean_output_tokens": 19569.3125,
+    "length_limited_calls": 2
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e0-s1",
+    "role": "reactive",
+    "calls": 63,
+    "output_tokens": 75551,
+    "mean_output_tokens": 1199.2222222222222,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e0-s1",
+    "role": "planning",
+    "calls": 23,
+    "output_tokens": 439511,
+    "mean_output_tokens": 19109.17391304348,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e1-s0",
+    "role": "reactive",
+    "calls": 70,
+    "output_tokens": 80335,
+    "mean_output_tokens": 1147.642857142857,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e1-s0",
+    "role": "planning",
+    "calls": 33,
+    "output_tokens": 524372,
+    "mean_output_tokens": 15890.060606060606,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e1-s1",
+    "role": "reactive",
+    "calls": 38,
+    "output_tokens": 48140,
+    "mean_output_tokens": 1266.842105263158,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-agile-e1-s1",
+    "role": "planning",
+    "calls": 19,
+    "output_tokens": 254193,
+    "mean_output_tokens": 13378.578947368422,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-reactive-e0-s0",
+    "role": "reactive",
+    "calls": 48,
+    "output_tokens": 101207,
+    "mean_output_tokens": 2108.4791666666665,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-reactive-e0-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 192231,
+    "mean_output_tokens": 1922.31,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-reactive-e1-s0",
+    "role": "reactive",
+    "calls": 44,
+    "output_tokens": 100304,
+    "mean_output_tokens": 2279.6363636363635,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "pilot-freeway-M-t8192-b4096-reactive-e1-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 213141,
+    "mean_output_tokens": 2131.41,
+    "length_limited_calls": 0
+  }
+]

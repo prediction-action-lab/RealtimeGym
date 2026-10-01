@@ -1,0 +1,3 @@
+# Keep published assets despite the repository-wide CSV and PNG ignore rules.
+!*.csv
+!*.png

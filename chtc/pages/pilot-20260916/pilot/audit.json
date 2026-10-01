@@ -1,0 +1,301 @@
+{
+  "passed": true,
+  "profile": "pilot",
+  "episodes": 12,
+  "details": [
+    {
+      "id": "pilot-freeway-M-t8192-b4096-reactive-e0-s0",
+      "mode": "reactive",
+      "steps": 48,
+      "normalized_score": 0.5842696629213483,
+      "wall_seconds": 990.7194203156978,
+      "collisions": 9,
+      "default_actions": 0,
+      "actions": {
+        "U": 41,
+        "S": 5,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 48,
+          "output_tokens": 101207,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b0-planning-e0-s0",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 9263.748833786696,
+      "collisions": 25,
+      "default_actions": 76,
+      "actions": {
+        "U": 82,
+        "S": 16,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 34,
+          "output_tokens": 912302,
+          "length_limited": 9
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-agile-e0-s0",
+      "mode": "agile",
+      "steps": 40,
+      "normalized_score": 0.6741573033707865,
+      "wall_seconds": 3726.071486895904,
+      "collisions": 5,
+      "default_actions": 0,
+      "actions": {
+        "U": 25,
+        "S": 12,
+        "D": 3
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 40,
+      "requests": {
+        "reactive": {
+          "calls": 40,
+          "output_tokens": 46624,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 16,
+          "output_tokens": 313109,
+          "length_limited": 2
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-reactive-e0-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 2040.3898955192417,
+      "collisions": 24,
+      "default_actions": 0,
+      "actions": {
+        "U": 81,
+        "S": 10,
+        "D": 9
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 192231,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b0-planning-e0-s1",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 9111.944106854498,
+      "collisions": 24,
+      "default_actions": 82,
+      "actions": {
+        "U": 85,
+        "S": 13,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 32,
+          "output_tokens": 890367,
+          "length_limited": 13
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-agile-e0-s1",
+      "mode": "agile",
+      "steps": 63,
+      "normalized_score": 0.4157303370786517,
+      "wall_seconds": 5319.7381884120405,
+      "collisions": 5,
+      "default_actions": 0,
+      "actions": {
+        "S": 19,
+        "U": 32,
+        "D": 12
+      },
+      "multiple_action_answers": 1,
+      "prefix_checks": 63,
+      "requests": {
+        "reactive": {
+          "calls": 63,
+          "output_tokens": 75551,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 23,
+          "output_tokens": 439511,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-reactive-e1-s0",
+      "mode": "reactive",
+      "steps": 44,
+      "normalized_score": 0.6292134831460674,
+      "wall_seconds": 1039.8376884851605,
+      "collisions": 6,
+      "default_actions": 0,
+      "actions": {
+        "D": 5,
+        "S": 6,
+        "U": 33
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 44,
+          "output_tokens": 100304,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b0-planning-e1-s0",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 11200.095741873607,
+      "collisions": 50,
+      "default_actions": 100,
+      "actions": {
+        "U": 100
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 50,
+          "output_tokens": 1107944,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-agile-e1-s0",
+      "mode": "agile",
+      "steps": 70,
+      "normalized_score": 0.33707865168539325,
+      "wall_seconds": 6135.681951710954,
+      "collisions": 10,
+      "default_actions": 0,
+      "actions": {
+        "U": 45,
+        "D": 10,
+        "S": 15
+      },
+      "multiple_action_answers": 1,
+      "prefix_checks": 70,
+      "requests": {
+        "reactive": {
+          "calls": 70,
+          "output_tokens": 80335,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 33,
+          "output_tokens": 524372,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-reactive-e1-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 2151.4247464006767,
+      "collisions": 29,
+      "default_actions": 0,
+      "actions": {
+        "U": 82,
+        "D": 8,
+        "S": 10
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 213141,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b0-planning-e1-s1",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 10830.221739821136,
+      "collisions": 47,
+      "default_actions": 93,
+      "actions": {
+        "U": 99,
+        "D": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 50,
+          "output_tokens": 1111131,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "pilot-freeway-M-t8192-b4096-agile-e1-s1",
+      "mode": "agile",
+      "steps": 38,
+      "normalized_score": 0.6966292134831461,
+      "wall_seconds": 2934.2325382195413,
+      "collisions": 4,
+      "default_actions": 0,
+      "actions": {
+        "U": 22,
+        "D": 8,
+        "S": 8
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 38,
+      "requests": {
+        "reactive": {
+          "calls": 38,
+          "output_tokens": 48140,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 19,
+          "output_tokens": 254193,
+          "length_limited": 0
+        }
+      }
+    }
+  ],
+  "note": "Integrity checks only. Low scores and truncation are reported, not used to select favorable runs."
+}

@@ -1,0 +1,41 @@
+[
+  {
+    "sweep": "pilot",
+    "game": "freeway",
+    "cognitive_load": "M",
+    "time_pressure": 8192,
+    "internal_budget": 0,
+    "mode": "planning",
+    "mean": 0.0,
+    "ci_low": 0.0,
+    "ci_high": 0.0,
+    "episodes": 4,
+    "environment_seeds": 2
+  },
+  {
+    "sweep": "pilot",
+    "game": "freeway",
+    "cognitive_load": "M",
+    "time_pressure": 8192,
+    "internal_budget": 4096,
+    "mode": "agile",
+    "mean": 0.5308988764044944,
+    "ci_low": 0.5168539325842697,
+    "ci_high": 0.5449438202247191,
+    "episodes": 4,
+    "environment_seeds": 2
+  },
+  {
+    "sweep": "pilot",
+    "game": "freeway",
+    "cognitive_load": "M",
+    "time_pressure": 8192,
+    "internal_budget": 4096,
+    "mode": "reactive",
+    "mean": 0.3033707865168539,
+    "ci_low": 0.29213483146067415,
+    "ci_high": 0.3146067415730337,
+    "episodes": 4,
+    "environment_seeds": 2
+  }
+]

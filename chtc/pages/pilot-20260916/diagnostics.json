@@ -1,0 +1,386 @@
+[
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-reactive-e0-s0",
+    "role": "reactive",
+    "calls": 48,
+    "output_tokens": 101207,
+    "mean_output_tokens": 2108.4791666666665,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b0-planning-e0-s0",
+    "role": "planning",
+    "calls": 12,
+    "output_tokens": 201494,
+    "mean_output_tokens": 16791.166666666668,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e0-s0",
+    "role": "reactive",
+    "calls": 22,
+    "output_tokens": 7846,
+    "mean_output_tokens": 356.6363636363636,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e0-s0",
+    "role": "planning",
+    "calls": 22,
+    "output_tokens": 360346,
+    "mean_output_tokens": 16379.363636363636,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-reactive-e0-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 192231,
+    "mean_output_tokens": 1922.31,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b0-planning-e0-s1",
+    "role": "planning",
+    "calls": 39,
+    "output_tokens": 944341,
+    "mean_output_tokens": 24213.871794871793,
+    "length_limited_calls": 9
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e0-s1",
+    "role": "reactive",
+    "calls": 22,
+    "output_tokens": 1748,
+    "mean_output_tokens": 79.45454545454545,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e0-s1",
+    "role": "planning",
+    "calls": 22,
+    "output_tokens": 339629,
+    "mean_output_tokens": 15437.681818181818,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-reactive-e1-s0",
+    "role": "reactive",
+    "calls": 44,
+    "output_tokens": 100304,
+    "mean_output_tokens": 2279.6363636363635,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b0-planning-e1-s0",
+    "role": "planning",
+    "calls": 22,
+    "output_tokens": 362007,
+    "mean_output_tokens": 16454.863636363636,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e1-s0",
+    "role": "reactive",
+    "calls": 15,
+    "output_tokens": 1278,
+    "mean_output_tokens": 85.2,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e1-s0",
+    "role": "planning",
+    "calls": 15,
+    "output_tokens": 170973,
+    "mean_output_tokens": 11398.2,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-reactive-e1-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 213141,
+    "mean_output_tokens": 2131.41,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b0-planning-e1-s1",
+    "role": "planning",
+    "calls": 24,
+    "output_tokens": 454159,
+    "mean_output_tokens": 18923.291666666668,
+    "length_limited_calls": 2
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e1-s1",
+    "role": "reactive",
+    "calls": 15,
+    "output_tokens": 2899,
+    "mean_output_tokens": 193.26666666666668,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t32768-b4096-agile-e1-s1",
+    "role": "planning",
+    "calls": 15,
+    "output_tokens": 167450,
+    "mean_output_tokens": 11163.333333333334,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-reactive-e0-s0",
+    "role": "reactive",
+    "calls": 48,
+    "output_tokens": 101207,
+    "mean_output_tokens": 2108.4791666666665,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b0-planning-e0-s0",
+    "role": "planning",
+    "calls": 46,
+    "output_tokens": 1097705,
+    "mean_output_tokens": 23863.152173913044,
+    "length_limited_calls": 8
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e0-s0",
+    "role": "reactive",
+    "calls": 12,
+    "output_tokens": 4952,
+    "mean_output_tokens": 412.6666666666667,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e0-s0",
+    "role": "planning",
+    "calls": 11,
+    "output_tokens": 121376,
+    "mean_output_tokens": 11034.181818181818,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-reactive-e0-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 192231,
+    "mean_output_tokens": 1922.31,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b0-planning-e0-s1",
+    "role": "planning",
+    "calls": 9,
+    "output_tokens": 144728,
+    "mean_output_tokens": 16080.888888888889,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e0-s1",
+    "role": "reactive",
+    "calls": 30,
+    "output_tokens": 18388,
+    "mean_output_tokens": 612.9333333333333,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e0-s1",
+    "role": "planning",
+    "calls": 22,
+    "output_tokens": 338863,
+    "mean_output_tokens": 15402.863636363636,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-reactive-e1-s0",
+    "role": "reactive",
+    "calls": 44,
+    "output_tokens": 100304,
+    "mean_output_tokens": 2279.6363636363635,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b0-planning-e1-s0",
+    "role": "planning",
+    "calls": 40,
+    "output_tokens": 733929,
+    "mean_output_tokens": 18348.225,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e1-s0",
+    "role": "reactive",
+    "calls": 35,
+    "output_tokens": 19020,
+    "mean_output_tokens": 543.4285714285714,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e1-s0",
+    "role": "planning",
+    "calls": 29,
+    "output_tokens": 411598,
+    "mean_output_tokens": 14193.034482758621,
+    "length_limited_calls": 2
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-reactive-e1-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 213141,
+    "mean_output_tokens": 2131.41,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b0-planning-e1-s1",
+    "role": "planning",
+    "calls": 67,
+    "output_tokens": 1225880,
+    "mean_output_tokens": 18296.716417910447,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e1-s1",
+    "role": "reactive",
+    "calls": 45,
+    "output_tokens": 23681,
+    "mean_output_tokens": 526.2444444444444,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t16384-b4096-agile-e1-s1",
+    "role": "planning",
+    "calls": 36,
+    "output_tokens": 502738,
+    "mean_output_tokens": 13964.944444444445,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-reactive-e0-s0",
+    "role": "reactive",
+    "calls": 48,
+    "output_tokens": 101207,
+    "mean_output_tokens": 2108.4791666666665,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b0-planning-e0-s0",
+    "role": "planning",
+    "calls": 34,
+    "output_tokens": 912302,
+    "mean_output_tokens": 26832.41176470588,
+    "length_limited_calls": 9
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e0-s0",
+    "role": "reactive",
+    "calls": 40,
+    "output_tokens": 46624,
+    "mean_output_tokens": 1165.6,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e0-s0",
+    "role": "planning",
+    "calls": 16,
+    "output_tokens": 313109,
+    "mean_output_tokens": 19569.3125,
+    "length_limited_calls": 2
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-reactive-e0-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 192231,
+    "mean_output_tokens": 1922.31,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b0-planning-e0-s1",
+    "role": "planning",
+    "calls": 32,
+    "output_tokens": 890367,
+    "mean_output_tokens": 27823.96875,
+    "length_limited_calls": 13
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e0-s1",
+    "role": "reactive",
+    "calls": 63,
+    "output_tokens": 75551,
+    "mean_output_tokens": 1199.2222222222222,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e0-s1",
+    "role": "planning",
+    "calls": 23,
+    "output_tokens": 439511,
+    "mean_output_tokens": 19109.17391304348,
+    "length_limited_calls": 1
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-reactive-e1-s0",
+    "role": "reactive",
+    "calls": 44,
+    "output_tokens": 100304,
+    "mean_output_tokens": 2279.6363636363635,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b0-planning-e1-s0",
+    "role": "planning",
+    "calls": 50,
+    "output_tokens": 1107944,
+    "mean_output_tokens": 22158.88,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e1-s0",
+    "role": "reactive",
+    "calls": 70,
+    "output_tokens": 80335,
+    "mean_output_tokens": 1147.642857142857,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e1-s0",
+    "role": "planning",
+    "calls": 33,
+    "output_tokens": 524372,
+    "mean_output_tokens": 15890.060606060606,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-reactive-e1-s1",
+    "role": "reactive",
+    "calls": 100,
+    "output_tokens": 213141,
+    "mean_output_tokens": 2131.41,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b0-planning-e1-s1",
+    "role": "planning",
+    "calls": 50,
+    "output_tokens": 1111131,
+    "mean_output_tokens": 22222.62,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e1-s1",
+    "role": "reactive",
+    "calls": 38,
+    "output_tokens": 48140,
+    "mean_output_tokens": 1266.842105263158,
+    "length_limited_calls": 0
+  },
+  {
+    "episode": "time_pressure-freeway-M-t8192-b4096-agile-e1-s1",
+    "role": "planning",
+    "calls": 19,
+    "output_tokens": 254193,
+    "mean_output_tokens": 13378.578947368422,
+    "length_limited_calls": 0
+  }
+]

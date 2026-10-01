@@ -1,0 +1,4 @@
+sweep,game,cognitive_load,time_pressure,internal_budget,mode,mean,ci_low,ci_high,episodes,environment_seeds
+pilot,freeway,M,8192,0,planning,0.0,0.0,0.0,4,2
+pilot,freeway,M,8192,4096,agile,0.5308988764044944,0.5168539325842697,0.5449438202247191,4,2
+pilot,freeway,M,8192,4096,reactive,0.3033707865168539,0.29213483146067415,0.3146067415730337,4,2

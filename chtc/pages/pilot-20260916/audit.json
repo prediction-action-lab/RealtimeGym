@@ -1,0 +1,892 @@
+{
+  "passed": true,
+  "profile": "meeting_completed_pressure_conditions",
+  "episodes": 36,
+  "expected_full_trend": 84,
+  "scope": "Only the 36 completed matched episodes at 32K, 16K, and 8K. Not a full sweep coverage audit.",
+  "details": [
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-reactive-e0-s0",
+      "mode": "reactive",
+      "steps": 48,
+      "normalized_score": 0.5842696629213483,
+      "wall_seconds": 1049.0139586608857,
+      "collisions": 9,
+      "default_actions": 0,
+      "actions": {
+        "U": 41,
+        "S": 5,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 48,
+          "output_tokens": 101207,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b0-planning-e0-s0",
+      "mode": "planning",
+      "steps": 12,
+      "normalized_score": 0.9887640449438202,
+      "wall_seconds": 2060.2604860607535,
+      "collisions": 0,
+      "default_actions": 0,
+      "actions": {
+        "U": 10,
+        "S": 1,
+        "D": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 12,
+      "requests": {
+        "planning": {
+          "calls": 12,
+          "output_tokens": 201494,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-agile-e0-s0",
+      "mode": "agile",
+      "steps": 22,
+      "normalized_score": 0.8764044943820225,
+      "wall_seconds": 3779.400061123073,
+      "collisions": 0,
+      "default_actions": 0,
+      "actions": {
+        "U": 15,
+        "D": 6,
+        "S": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 22,
+      "requests": {
+        "reactive": {
+          "calls": 22,
+          "output_tokens": 7846,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 22,
+          "output_tokens": 360346,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-reactive-e0-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 1950.4045588802546,
+      "collisions": 24,
+      "default_actions": 0,
+      "actions": {
+        "U": 81,
+        "S": 10,
+        "D": 9
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 192231,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b0-planning-e0-s1",
+      "mode": "planning",
+      "steps": 39,
+      "normalized_score": 0.6853932584269663,
+      "wall_seconds": 9850.146308397874,
+      "collisions": 3,
+      "default_actions": 6,
+      "actions": {
+        "U": 27,
+        "D": 8,
+        "S": 4
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 39,
+      "requests": {
+        "planning": {
+          "calls": 39,
+          "output_tokens": 944341,
+          "length_limited": 9
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-agile-e0-s1",
+      "mode": "agile",
+      "steps": 22,
+      "normalized_score": 0.8764044943820225,
+      "wall_seconds": 3615.7511104997247,
+      "collisions": 0,
+      "default_actions": 0,
+      "actions": {
+        "U": 15,
+        "D": 6,
+        "S": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 22,
+      "requests": {
+        "reactive": {
+          "calls": 22,
+          "output_tokens": 1748,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 22,
+          "output_tokens": 339629,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-reactive-e1-s0",
+      "mode": "reactive",
+      "steps": 44,
+      "normalized_score": 0.6292134831460674,
+      "wall_seconds": 1011.9754197411239,
+      "collisions": 6,
+      "default_actions": 0,
+      "actions": {
+        "D": 5,
+        "S": 6,
+        "U": 33
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 44,
+          "output_tokens": 100304,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b0-planning-e1-s0",
+      "mode": "planning",
+      "steps": 22,
+      "normalized_score": 0.8764044943820225,
+      "wall_seconds": 3627.053027253598,
+      "collisions": 1,
+      "default_actions": 3,
+      "actions": {
+        "U": 18,
+        "D": 3,
+        "S": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 22,
+      "requests": {
+        "planning": {
+          "calls": 22,
+          "output_tokens": 362007,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-agile-e1-s0",
+      "mode": "agile",
+      "steps": 15,
+      "normalized_score": 0.9550561797752809,
+      "wall_seconds": 1766.792828362435,
+      "collisions": 0,
+      "default_actions": 0,
+      "actions": {
+        "U": 12,
+        "D": 3
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 15,
+      "requests": {
+        "reactive": {
+          "calls": 15,
+          "output_tokens": 1278,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 15,
+          "output_tokens": 170973,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-reactive-e1-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 2189.4695236179978,
+      "collisions": 29,
+      "default_actions": 0,
+      "actions": {
+        "U": 82,
+        "D": 8,
+        "S": 10
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 213141,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b0-planning-e1-s1",
+      "mode": "planning",
+      "steps": 24,
+      "normalized_score": 0.8539325842696629,
+      "wall_seconds": 4805.083496740088,
+      "collisions": 2,
+      "default_actions": 2,
+      "actions": {
+        "U": 19,
+        "D": 4,
+        "S": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 24,
+      "requests": {
+        "planning": {
+          "calls": 24,
+          "output_tokens": 454159,
+          "length_limited": 2
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t32768-b4096-agile-e1-s1",
+      "mode": "agile",
+      "steps": 15,
+      "normalized_score": 0.9550561797752809,
+      "wall_seconds": 1814.9994680285454,
+      "collisions": 0,
+      "default_actions": 0,
+      "actions": {
+        "U": 12,
+        "D": 3
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 15,
+      "requests": {
+        "reactive": {
+          "calls": 15,
+          "output_tokens": 2899,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 15,
+          "output_tokens": 167450,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-reactive-e0-s0",
+      "mode": "reactive",
+      "steps": 48,
+      "normalized_score": 0.5842696629213483,
+      "wall_seconds": 1009.3907549995929,
+      "collisions": 9,
+      "default_actions": 0,
+      "actions": {
+        "U": 41,
+        "S": 5,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 48,
+          "output_tokens": 101207,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b0-planning-e0-s0",
+      "mode": "planning",
+      "steps": 80,
+      "normalized_score": 0.2247191011235955,
+      "wall_seconds": 10575.862814876251,
+      "collisions": 15,
+      "default_actions": 34,
+      "actions": {
+        "U": 53,
+        "S": 25,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 80,
+      "requests": {
+        "planning": {
+          "calls": 46,
+          "output_tokens": 1097705,
+          "length_limited": 8
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-agile-e0-s0",
+      "mode": "agile",
+      "steps": 12,
+      "normalized_score": 0.9887640449438202,
+      "wall_seconds": 1191.2545803068206,
+      "collisions": 0,
+      "default_actions": 0,
+      "actions": {
+        "U": 10,
+        "S": 1,
+        "D": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 12,
+      "requests": {
+        "reactive": {
+          "calls": 12,
+          "output_tokens": 4952,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 11,
+          "output_tokens": 121376,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-reactive-e0-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 1948.1918918918818,
+      "collisions": 24,
+      "default_actions": 0,
+      "actions": {
+        "U": 81,
+        "S": 10,
+        "D": 9
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 192231,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b0-planning-e0-s1",
+      "mode": "planning",
+      "steps": 12,
+      "normalized_score": 0.9887640449438202,
+      "wall_seconds": 1447.1107210312039,
+      "collisions": 0,
+      "default_actions": 2,
+      "actions": {
+        "U": 10,
+        "S": 1,
+        "D": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 12,
+      "requests": {
+        "planning": {
+          "calls": 9,
+          "output_tokens": 144728,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-agile-e0-s1",
+      "mode": "agile",
+      "steps": 30,
+      "normalized_score": 0.7865168539325843,
+      "wall_seconds": 3606.8682804703712,
+      "collisions": 1,
+      "default_actions": 0,
+      "actions": {
+        "U": 19,
+        "D": 7,
+        "S": 4
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 30,
+      "requests": {
+        "reactive": {
+          "calls": 30,
+          "output_tokens": 18388,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 22,
+          "output_tokens": 338863,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-reactive-e1-s0",
+      "mode": "reactive",
+      "steps": 44,
+      "normalized_score": 0.6292134831460674,
+      "wall_seconds": 1002.3412311468273,
+      "collisions": 6,
+      "default_actions": 0,
+      "actions": {
+        "D": 5,
+        "S": 6,
+        "U": 33
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 44,
+          "output_tokens": 100304,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b0-planning-e1-s0",
+      "mode": "planning",
+      "steps": 59,
+      "normalized_score": 0.4606741573033708,
+      "wall_seconds": 7297.551958028227,
+      "collisions": 10,
+      "default_actions": 18,
+      "actions": {
+        "U": 48,
+        "D": 8,
+        "S": 3
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 59,
+      "requests": {
+        "planning": {
+          "calls": 40,
+          "output_tokens": 733929,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-agile-e1-s0",
+      "mode": "agile",
+      "steps": 35,
+      "normalized_score": 0.7303370786516854,
+      "wall_seconds": 4294.044163327664,
+      "collisions": 5,
+      "default_actions": 0,
+      "actions": {
+        "S": 8,
+        "U": 24,
+        "D": 3
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 35,
+      "requests": {
+        "reactive": {
+          "calls": 35,
+          "output_tokens": 19020,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 29,
+          "output_tokens": 411598,
+          "length_limited": 2
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-reactive-e1-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 2164.6541283875704,
+      "collisions": 29,
+      "default_actions": 0,
+      "actions": {
+        "U": 82,
+        "D": 8,
+        "S": 10
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 213141,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b0-planning-e1-s1",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 12348.673481956124,
+      "collisions": 14,
+      "default_actions": 27,
+      "actions": {
+        "U": 78,
+        "D": 16,
+        "S": 6
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 67,
+          "output_tokens": 1225880,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t16384-b4096-agile-e1-s1",
+      "mode": "agile",
+      "steps": 45,
+      "normalized_score": 0.6179775280898876,
+      "wall_seconds": 5347.318094173446,
+      "collisions": 5,
+      "default_actions": 0,
+      "actions": {
+        "U": 33,
+        "D": 10,
+        "S": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 45,
+      "requests": {
+        "reactive": {
+          "calls": 45,
+          "output_tokens": 23681,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 36,
+          "output_tokens": 502738,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-reactive-e0-s0",
+      "mode": "reactive",
+      "steps": 48,
+      "normalized_score": 0.5842696629213483,
+      "wall_seconds": 1049.7680705143139,
+      "collisions": 9,
+      "default_actions": 0,
+      "actions": {
+        "U": 41,
+        "S": 5,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 48,
+          "output_tokens": 101207,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b0-planning-e0-s0",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 9141.819099696353,
+      "collisions": 25,
+      "default_actions": 76,
+      "actions": {
+        "U": 82,
+        "S": 16,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 34,
+          "output_tokens": 912302,
+          "length_limited": 9
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-agile-e0-s0",
+      "mode": "agile",
+      "steps": 40,
+      "normalized_score": 0.6741573033707865,
+      "wall_seconds": 3584.414519750513,
+      "collisions": 5,
+      "default_actions": 0,
+      "actions": {
+        "U": 25,
+        "S": 12,
+        "D": 3
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 40,
+      "requests": {
+        "reactive": {
+          "calls": 40,
+          "output_tokens": 46624,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 16,
+          "output_tokens": 313109,
+          "length_limited": 2
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-reactive-e0-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 1969.688112521544,
+      "collisions": 24,
+      "default_actions": 0,
+      "actions": {
+        "U": 81,
+        "S": 10,
+        "D": 9
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 192231,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b0-planning-e0-s1",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 9114.27663209103,
+      "collisions": 24,
+      "default_actions": 82,
+      "actions": {
+        "U": 85,
+        "S": 13,
+        "D": 2
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 32,
+          "output_tokens": 890367,
+          "length_limited": 13
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-agile-e0-s1",
+      "mode": "agile",
+      "steps": 63,
+      "normalized_score": 0.4157303370786517,
+      "wall_seconds": 5316.426170371473,
+      "collisions": 5,
+      "default_actions": 0,
+      "actions": {
+        "S": 19,
+        "U": 32,
+        "D": 12
+      },
+      "multiple_action_answers": 1,
+      "prefix_checks": 63,
+      "requests": {
+        "reactive": {
+          "calls": 63,
+          "output_tokens": 75551,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 23,
+          "output_tokens": 439511,
+          "length_limited": 1
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-reactive-e1-s0",
+      "mode": "reactive",
+      "steps": 44,
+      "normalized_score": 0.6292134831460674,
+      "wall_seconds": 1018.4155704220757,
+      "collisions": 6,
+      "default_actions": 0,
+      "actions": {
+        "D": 5,
+        "S": 6,
+        "U": 33
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 44,
+          "output_tokens": 100304,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b0-planning-e1-s0",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 10826.290507319383,
+      "collisions": 50,
+      "default_actions": 100,
+      "actions": {
+        "U": 100
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 50,
+          "output_tokens": 1107944,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-agile-e1-s0",
+      "mode": "agile",
+      "steps": 70,
+      "normalized_score": 0.33707865168539325,
+      "wall_seconds": 5853.6352948099375,
+      "collisions": 10,
+      "default_actions": 0,
+      "actions": {
+        "U": 45,
+        "D": 10,
+        "S": 15
+      },
+      "multiple_action_answers": 1,
+      "prefix_checks": 70,
+      "requests": {
+        "reactive": {
+          "calls": 70,
+          "output_tokens": 80335,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 33,
+          "output_tokens": 524372,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-reactive-e1-s1",
+      "mode": "reactive",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 2148.056886044331,
+      "collisions": 29,
+      "default_actions": 0,
+      "actions": {
+        "U": 82,
+        "D": 8,
+        "S": 10
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 0,
+      "requests": {
+        "reactive": {
+          "calls": 100,
+          "output_tokens": 213141,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b0-planning-e1-s1",
+      "mode": "planning",
+      "steps": 100,
+      "normalized_score": 0.0,
+      "wall_seconds": 11102.721228591166,
+      "collisions": 47,
+      "default_actions": 93,
+      "actions": {
+        "U": 99,
+        "D": 1
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 100,
+      "requests": {
+        "planning": {
+          "calls": 50,
+          "output_tokens": 1111131,
+          "length_limited": 0
+        }
+      }
+    },
+    {
+      "id": "time_pressure-freeway-M-t8192-b4096-agile-e1-s1",
+      "mode": "agile",
+      "steps": 38,
+      "normalized_score": 0.6966292134831461,
+      "wall_seconds": 2911.688326233998,
+      "collisions": 4,
+      "default_actions": 0,
+      "actions": {
+        "U": 22,
+        "D": 8,
+        "S": 8
+      },
+      "multiple_action_answers": 0,
+      "prefix_checks": 38,
+      "requests": {
+        "reactive": {
+          "calls": 38,
+          "output_tokens": 48140,
+          "length_limited": 0
+        },
+        "planning": {
+          "calls": 19,
+          "output_tokens": 254193,
+          "length_limited": 0
+        }
+      }
+    }
+  ]
+}

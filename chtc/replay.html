@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qwen3-8B · RealtimeGym replay</title>
+<style>
+body{font:16px system-ui;margin:2rem;background:#131722;color:#ecf0f9}h1{font-size:1.7rem}
+select,button,input{font:inherit;margin:.4rem;padding:.4rem}#panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+article{background:#202838;padding:1rem;border-radius:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px monospace;max-height:420px;overflow:auto}
+.state{white-space:pre;overflow:auto}img{width:100%;max-height:360px;object-fit:contain}.note{color:#b4bfd5}input{width:40%}@media(max-width:900px){#panels{grid-template-columns:1fr}}
+</style>
+<h1>Qwen3-8B · Real-Time Reasoning Gym</h1>
+<p class="note">Recorded token-simulation episodes. Inspect the state before an action and the guidance available at that step. No live model calls.</p>
+<select id="episode"></select><br><button id="play">Play</button><button id="next">Next step</button>
+<input id="step" type="range" min="0" max="0" value="0"><span id="position"></span>
+<div id="panels"></div>
+<script>
+const index=/*EPISODE_INDEX*/[];
+const modes=['reactive','planning','agile'], cache={}, groups=new Map();
+const choice=document.getElementById('episode'), slider=document.getElementById('step');
+let current=[], timer=null, selection=0;
+for(const item of index){const key=[item.sweep,item.game,item.cognitive_load,item.time_pressure,'env '+item.env_seed,'sample '+item.sample_seed].join(' / ');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);}
+for(const key of groups.keys()){const option=document.createElement('option');option.textContent=key;option.value=key;choice.append(option);}
+window.receiveEpisode=(id,data)=>{cache[id]=data;render();};
+function select(){selection++;current=groups.get(choice.value)||[];slider.value=0;slider.max=Math.max(0,...current.map(x=>x.steps-1));for(const item of current){if(!cache[item.id]){const script=document.createElement('script');script.src='replay-data/'+item.id+'.js';document.body.append(script);}}render();}
+function add(parent,tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;parent.append(el);return el;}
+function render(){const panels=document.getElementById('panels');panels.replaceChildren();const turn=Number(slider.value);document.getElementById('position').textContent='Step '+(turn+1)+' / '+(Number(slider.max)+1);
+for(const mode of modes){const card=document.createElement('article');panels.append(card);add(card,'h2',mode==='agile'?'AgileThinker':mode[0].toUpperCase()+mode.slice(1));const meta=current.find(x=>x.mode===mode);if(!meta){add(card,'p','No recorded episode');continue;}const ep=cache[meta.id];if(!ep){add(card,'p','Loading…');continue;}const step=ep.steps[turn];if(!step){add(card,'p','Episode ended. Final reward: '+meta.raw_reward);continue;}add(card,'p','Action: '+step.action+' · Reward after action: '+step.reward);if(step.image){add(card,'p','Game after action','note');const img=add(card,'img','');img.src=step.image;img.alt=mode+' game state after action';}const detail=add(card,'details','');add(detail,'summary','Observation before action');add(detail,'pre',step.state,'state');add(card,'h3','Timing and action diagnostics');add(card,'pre',JSON.stringify(step.diagnostics,null,2));add(card,'h3','Available planning guidance');add(card,'pre',step.guidance||'None');add(card,'h3','Agent output');add(card,'pre',step.response||'No new output');}}
+choice.onchange=select;slider.oninput=render;
+document.getElementById('next').onclick=()=>{slider.value=Math.min(Number(slider.max),Number(slider.value)+1);render();};
+document.getElementById('play').onclick=()=>{if(timer){clearInterval(timer);timer=null;document.getElementById('play').textContent='Play';return;}document.getElementById('play').textContent='Pause';timer=setInterval(()=>{if(Number(slider.value)>=Number(slider.max)){clearInterval(timer);timer=null;document.getElementById('play').textContent='Play';return;}document.getElementById('next').click();},800);};
+select();
+</script></html>
