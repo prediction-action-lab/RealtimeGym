@@ -125,7 +125,10 @@ def main():
         output_dir=a.out, per_device_train_batch_size=a.batch,
         gradient_accumulation_steps=a.accum, num_train_epochs=a.epochs,
         learning_rate=a.lr, lr_scheduler_type="cosine", warmup_ratio=0.03,
-        bf16=True, logging_steps=10, save_strategy="epoch", save_total_limit=1,
+        # "no": save_pretrained below writes the adapter. Trainer checkpoints
+        # also carry optimizer state (~1GB), which then gets copied to /staging
+        # for nothing.
+        bf16=True, logging_steps=10, save_strategy="no",
         eval_strategy="epoch", per_device_eval_batch_size=a.batch,
         gradient_checkpointing=True, report_to=[], remove_unused_columns=False)
     trainer = Trainer(model=model, args=args, train_dataset=train, eval_dataset=val,
