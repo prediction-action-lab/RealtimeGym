@@ -103,6 +103,13 @@ def main():
     train = torch.utils.data.Subset(ds, idx[n_val:])
     print(f"examples: {len(train)} train / {len(val)} val, max_len {a.max_len}")
 
+    # Prove the masking: only the assistant turn should survive. A silent
+    # off-by-one here trains on the game rules and looks like a normal loss curve.
+    ex = ds[idx[-1]]
+    kept = [t for t, l in zip(ex["input_ids"], ex["labels"]) if l != -100]
+    print(f"  loss span: {len(kept)}/{len(ex['input_ids'])} tokens; decoded ->")
+    print("  " + repr(tok.decode(kept)[:300]))
+
     model = AutoModelForCausalLM.from_pretrained(
         a.base, torch_dtype=torch.bfloat16, trust_remote_code=True, device_map=None)
     model.config.use_cache = False
