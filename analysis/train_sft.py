@@ -36,19 +36,30 @@ class Steps(Dataset):
             random.Random(seed).shuffle(rows)
             rows = rows[:limit]
         self.rows, self.tok, self.max_len = rows, tok, max_len
+        # Truncating at max_len would cut the trailing \boxed{} off the longest
+        # traces, teaching the model to reason and then never answer. Drop those
+        # instead -- a short example is useless, a headless one is harmful.
+        keep = [r for r in self.rows if len(self._ids(r)[1]) <= max_len]
+        if len(keep) != len(self.rows):
+            print(f"  dropped {len(self.rows) - len(keep)} example(s) longer than {max_len} tokens")
+            self.rows = keep
+
+    def _ids(self, row):
+        m = row["messages"]
+        prompt = self.tok.apply_chat_template(
+            [m[0]], tokenize=False, add_generation_prompt=True,
+            **({"enable_thinking": False} if "qwen3" in self.tok.name_or_path.lower() else {}))
+        full = prompt + m[1]["content"] + (self.tok.eos_token or "")
+        return (self.tok(prompt, add_special_tokens=False)["input_ids"],
+                self.tok(full, add_special_tokens=False)["input_ids"])
 
     def __len__(self):
         return len(self.rows)
 
     def __getitem__(self, i):
-        m = self.rows[i]["messages"]
         # prompt exactly as served at eval time, then the target turn
-        prompt = self.tok.apply_chat_template(
-            [m[0]], tokenize=False, add_generation_prompt=True,
-            **({"enable_thinking": False} if "qwen3" in self.tok.name_or_path.lower() else {}))
-        full = prompt + m[1]["content"] + (self.tok.eos_token or "")
-        p_ids = self.tok(prompt, add_special_tokens=False)["input_ids"]
-        f_ids = self.tok(full, add_special_tokens=False)["input_ids"][: self.max_len]
+        p_ids, f_ids = self._ids(self.rows[i])
+        f_ids = f_ids[: self.max_len]
         labels = list(f_ids)
         for j in range(min(len(p_ids), len(labels))):
             labels[j] = -100
@@ -80,7 +91,7 @@ def main():
     ap.add_argument("--data", required=True)
     ap.add_argument("--base", default="Qwen/Qwen3-8B")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--max-len", type=int, default=4096)
+    ap.add_argument("--max-len", type=int, default=8192)
     ap.add_argument("--epochs", type=float, default=2.0)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--batch", type=int, default=1)
