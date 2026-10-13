@@ -8,7 +8,10 @@ api_key: dummy
 inference_parameters:
   temperature: 0.7
   top_p: 0.8
-  max_tokens: 2048      # clamped to internal_budget by reactive_inference anyway
+  # Headroom only. reactive_inference uses min(internal_budget, max_tokens), so a
+  # value here BELOW internal_budget silently caps the agent: with 2048 set here,
+  # IBUDGET=4096 runs actually generated at most 2048 tokens.
+  max_tokens: 16384
   extra_body:
     chat_template_kwargs:
       enable_thinking: false

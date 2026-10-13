@@ -42,3 +42,8 @@ rtg_figures/
 !results/**/model.txt
 !results/figures/*.csv
 !results/figures/*.png
+
+# HF dataset cache + generated SFT data
+rtg_hf_cache/
+*.jsonl
+rtg_partial/

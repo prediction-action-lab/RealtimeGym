@@ -83,6 +83,10 @@ def load_runs(logs_root, default_model="qwen3-8b"):
         if not rewards:
             print(f"  skip (no results yet): {os.path.dirname(args_log)}")
             continue
+        # gap3 refresh arms are a separate experiment (see plot_refresh.py); pooling
+        # them into "agile" would mix the treatment into its own baseline
+        if str(cfg.get("refresh_plan", "False")).lower() == "true":
+            continue
         game = cfg.get("game", "freeway")
         lo, hi = R_BOUNDS.get(game, (0, 1))
         for r in rewards:
@@ -242,7 +246,16 @@ def _plot(ax, series, key, xlabel, reactive_flat=False):
     ax.set_xlim(-0.35, max(len(all_x) - 0.65, 0.35))
     ax.set_xlabel(xlabel)
     ax.set_ylabel("SCORE")
-    ax.set_ylim(-0.02, 1.05)
+    # Snake and Overcooked sit near the floor at 8B: on a 0-1 axis every line is
+    # flat and the comparison is invisible. Rescale when the data is all low, and
+    # say so on the panel so nobody reads it as a 0-1 plot.
+    top = max((p[1] + p[2]) for pts in series.values() for p in pts) if series else 1.0
+    if top < 0.25:
+        ax.set_ylim(-0.005, top * 1.35)
+        ax.text(0.99, 0.97, "y-axis rescaled (paper uses 0-1)", transform=ax.transAxes,
+                ha="right", va="top", fontsize=8, color="#C0392B")
+    else:
+        ax.set_ylim(-0.02, 1.05)
 
 
 def main():

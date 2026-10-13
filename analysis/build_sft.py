@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+"""
+Build SFT data from the SALT-NLP/RealtimeGym dataset of DeepSeek trajectories.
+
+The dataset stores, per env step: `original_state` (the state block the model was
+shown), `thinking` (its reasoning), `action` (what it did) and a structured
+`state`. The eval prompt is FAST_AGENT_PROMPT + that state block, so examples
+built here are byte-identical to what the model sees at eval time.
+
+Two targets, because they teach different things:
+
+  --style full    prompt -> reasoning + \\boxed{action}
+                  Teaches DeepSeek-like play. Its traces are LONG, so a model
+                  trained on them is better but SLOWER -- under a token clock
+                  that can lower the score. Follow with RL under a length
+                  penalty, or evaluate at a generous budget.
+
+  --style short   prompt -> \\boxed{action} only
+                  Teaches the policy at a length you can actually afford each
+                  step. Cheaper, and a clean measurement of how much the
+                  reasoning text is worth.
+
+Usage:
+  python analysis/build_sft.py --game freeway --mode reactive --out sft_freeway.jsonl
+  python analysis/build_sft.py --game freeway --mode reactive --style short --loads easy medium
+"""
+import argparse
+import json
+import os
+import re
+import urllib.request
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+HF = "https://huggingface.co/datasets/SALT-NLP/RealtimeGym/resolve/main"
+LOADS = ["easy", "medium", "hard"]
+PRESSURES = ["4k", "8k", "16k", "32k"]
+
+
+def templates(game):
+    """Read the block scalars out of prompts/<game>.yaml without needing pyyaml."""
+    text = (REPO / "src" / "realtimegym" / "prompts" / f"{game}.yaml").read_text()
+    out, key, buf = {}, None, []
+    for line in text.splitlines():
+        m = re.match(r"^([a-z_]+):\s*\|\s*$", line)
+        if m:
+            if key:
+                out[key] = "\n".join(buf)
+            key, buf = m.group(1), []
+        elif key is not None:
+            buf.append(line[2:] if line.startswith("  ") else line)
+    if key:
+        out[key] = "\n".join(buf)
+    return out
+
+
+def fetch(name, cache):
+    p = cache / name
+    if not p.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(f"{HF}/{name}", p)
+    return json.loads(p.read_text())
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--game", default="freeway", choices=["freeway", "snake", "overcooked"])
+    ap.add_argument("--mode", default="reactive", choices=["reactive", "planning", "agile"])
+    ap.add_argument("--loads", nargs="*", default=LOADS)
+    ap.add_argument("--pressures", nargs="*", default=PRESSURES)
+    ap.add_argument("--seeds", type=int, nargs="*", default=list(range(8)))
+    ap.add_argument("--style", default="full", choices=["full", "short"])
+    ap.add_argument("--max-thinking-chars", type=int, default=0,
+                    help="drop examples whose reasoning is longer than this (0 = keep all)")
+    ap.add_argument("--prompts-only", action="store_true",
+                    help="emit prompts without labels, as an RL prompt set")
+    ap.add_argument("--cache", default=str(REPO / "rtg_hf_cache"))
+    ap.add_argument("--out", default="sft.jsonl")
+    a = ap.parse_args()
+
+    tpl = templates(a.game)
+    header = tpl["fast_agent_prompt"] if a.mode == "reactive" else tpl["slow_agent_prompt"] + tpl["action_format_prompt"]
+
+    cache = Path(a.cache)
+    rows, skipped, missing, lens = [], 0, 0, []
+    for load in a.loads:
+        for pressure in a.pressures:
+            for seed in a.seeds:
+                name = f"{a.game}_{load}_{pressure}_seed{seed}_{a.mode}.json"
+                try:
+                    steps = fetch(name, cache)
+                except Exception:
+                    missing += 1
+                    continue
+                for s in steps:
+                    think = (s.get("thinking") or "").strip()
+                    act = (s.get("action") or "").strip()
+                    state = (s.get("original_state") or "").strip()
+                    # a few records carry a whole action SEQUENCE ("UDUDSDDS...")
+                    # instead of one move -- planning output that leaked into a
+                    # reactive file. One step = one action.
+                    valid = {"freeway": "UDS", "snake": "LRUD", "overcooked": "UDLRSI"}[a.game]
+                    if not act or not state or len(act) != 1 or act not in valid:
+                        skipped += 1
+                        continue
+                    if a.max_thinking_chars and len(think) > a.max_thinking_chars:
+                        skipped += 1
+                        continue
+                    prompt = header + state
+                    rec = {"prompt": prompt, "game": a.game, "mode": a.mode,
+                           "load": load, "pressure": pressure, "seed": seed,
+                           "step": s.get("step"), "action": act}
+                    if not a.prompts_only:
+                        # the trace usually ends with its own \boxed{...}; only add
+                        # one when it is missing, or the label appears twice
+                        if a.style == "short":
+                            body = f"$$\n\\boxed{{{act}}}\n$$"
+                        elif re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:]):
+                            body = think
+                        else:
+                            body = f"{think}\n\n$$\n\\boxed{{{act}}}\n$$"
+                        rec["messages"] = [{"role": "user", "content": prompt},
+                                           {"role": "assistant", "content": body}]
+                        lens.append(len(body))
+                    rows.append(rec)
+
+    with open(a.out, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+
+    print(f"wrote {len(rows)} examples -> {a.out}")
+    print(f"  files missing: {missing}  steps skipped: {skipped}")
+    if lens:
+        lens.sort()
+        approx = lambda c: c / 4          # ~4 chars per token, rough
+        print(f"  completion chars: median {lens[len(lens)//2]}  p90 {lens[int(.9*len(lens))]}  max {lens[-1]}")
+        print(f"  ~tokens:          median {approx(lens[len(lens)//2]):.0f}  p90 {approx(lens[int(.9*len(lens))]):.0f}")
+    acts = {}
+    for r in rows:
+        acts[r["action"]] = acts.get(r["action"], 0) + 1
+    print(f"  action balance: {dict(sorted(acts.items(), key=lambda kv: -kv[1]))}")
+
+
+if __name__ == "__main__":
+    main()
