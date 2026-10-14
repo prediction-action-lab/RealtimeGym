@@ -14,6 +14,7 @@ Usage:
   python analysis/plot_baseline.py --logs_root logs --out analysis/figures
 """
 import argparse
+import csv
 import glob
 import os
 import re
@@ -59,6 +60,32 @@ def parse_args_log(path):
     return cfg, rewards
 
 
+def effective_budget(run_dir, declared):
+    """The reactive thread generates at min(internal_budget, max_tokens), and
+    max_tokens lives in the model config -- which args.log does not record. A
+    run whose generations stop dead at a power of two below the declared budget
+    was silently capped there, so it is not the experiment it claims to be.
+
+    Detected from the data: a capped run's longest generation equals the cap
+    exactly, for every seed.
+    """
+    best = 0
+    for f in glob.glob(os.path.join(run_dir, "*_*.csv")):
+        try:
+            with open(f) as fh:
+                for row in csv.DictReader(fh):
+                    v = (row.get("model1_token_num") or "").strip()
+                    if v:
+                        best = max(best, int(float(v)))
+        except (OSError, ValueError):
+            continue
+    if not best or not declared:
+        return declared
+    # a cap is a round power of two; a model that merely chose to stop early
+    # would not land on one exactly, run after run
+    return best if best < declared and best & (best - 1) == 0 else declared
+
+
 def model_tag(args_log, logs_root, default):
     """The job writes logs/<runtag>/model.txt. args.log only names the config
     file, which is identical for every model (the job patches the model inside),
@@ -89,6 +116,8 @@ def load_runs(logs_root, default_model="qwen3-8b"):
             continue
         game = cfg.get("game", "freeway")
         lo, hi = R_BOUNDS.get(game, (0, 1))
+        declared = int(float(cfg.get("internal_budget", 0) or 0))
+        eff = effective_budget(os.path.dirname(args_log), declared)
         for r in rewards:
             rows.append({
                 "game": game,
@@ -96,10 +125,56 @@ def load_runs(logs_root, default_model="qwen3-8b"):
                 "pressure": int(float(cfg.get("time_pressure", 0))),
                 "mode": cfg.get("mode", "agile"),
                 "model": model_tag(args_log, logs_root, default_model),
+                "budget": declared,
+                "eff_budget": eff,
+                "run": os.path.basename(os.path.dirname(args_log)),
                 "reward": r,
                 "score": (r - lo) / (hi - lo),
             })
-    return rows
+    return drop_capped(rows)
+
+
+def drop_capped(rows):
+    """Within a cell, prefer runs that actually ran at the declared budget.
+
+    Some early runs were silently capped by the model config's max_tokens. They
+    declare the same internal_budget as the fixed runs, so pooling them averages
+    two different experiments into one point.
+    """
+    cells = {}
+    for r in rows:
+        cells.setdefault((r["model"], r["game"], r["mode"], r["load"],
+                          r["pressure"], r["budget"]), set()).add(r["eff_budget"])
+    drop = {k for k, v in cells.items() if len(v) > 1}
+    if not drop:
+        return rows
+    kept = []
+    dropped = {}
+    for r in rows:
+        k = (r["model"], r["game"], r["mode"], r["load"], r["pressure"], r["budget"])
+        if k in drop and r["eff_budget"] != r["budget"]:
+            dropped.setdefault(r["run"], [0, r["eff_budget"], r["budget"]])[0] += 1
+        else:
+            kept.append(r)
+    for run, (n, eff, dec) in sorted(dropped.items()):
+        print(f"  drop {n:>3} run(s) from {run}: capped at {eff}, cell declares {dec}")
+    warn_capped(kept)
+    return kept
+
+
+def warn_capped(rows):
+    """Cells with no uncapped run are kept -- dropping them would erase a whole
+    model's baseline -- but a curve measured at an effective 2048 cannot be
+    compared with one measured at 4096 without saying so."""
+    still = {}
+    for r in rows:
+        if r["eff_budget"] != r["budget"]:
+            still.setdefault((r["model"], r["game"], r["mode"]), set()).add(
+                (r["eff_budget"], r["budget"]))
+    for (model, game, mode), pairs in sorted(still.items()):
+        for eff, dec in sorted(pairs):
+            print(f"  NOTE {model}/{game}/{mode} ran at an effective {eff} "
+                  f"(declares {dec}); not comparable to a {dec} curve")
 
 
 def pick_slice(rows, vary, fixed):
