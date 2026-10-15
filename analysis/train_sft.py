@@ -2,6 +2,11 @@
 """
 LoRA SFT on RealtimeGym trajectories (output of analysis/build_sft.py).
 
+The targets are the dataset's released reasoning traces -- very likely
+DeepSeek-reasoner's, per the repo's reference config, though the dataset card
+does not say so (see build_sft.py). This is therefore distillation of another
+model's reasoning into the base model, not the base model learning to reason.
+
 Loss is computed on the ASSISTANT TURN ONLY -- the prompt is masked out. Without
 that the model spends most of its gradient learning to reproduce the game rules,
 which it is already given at eval time.
@@ -67,7 +72,7 @@ class Steps(Dataset):
 
 
 def rebalance(rows, mode, seed):
-    """DeepSeek drives forward: ~79% U / 16% S / 4% D on Freeway. Training on that
+    """The traces drive forward: ~79% U / 16% S / 4% D on Freeway. Training on that
     as-is teaches 'always press U', which is already the reactive agent's failure
     mode. 'cap' downsamples the majority action to 2x the runner-up."""
     by = {}

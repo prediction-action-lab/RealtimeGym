@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 """
-Build SFT data from the SALT-NLP/RealtimeGym dataset of DeepSeek trajectories.
+Build SFT data from the SALT-NLP/RealtimeGym dataset of released trajectories.
+
+Provenance: the dataset card does not name the model that generated the traces,
+and the records carry no model field. The repo's reference config
+(configs/example-deepseek-v3.2-planning.yaml) points at `deepseek-reasoner`
+with tokenizer deepseek-ai/DeepSeek-R1, and the traces are stylistically
+uniform, so these are very likely DeepSeek-reasoner outputs -- but that is an
+inference, not a documented fact. Worth confirming with the authors before any
+claim rests on it.
 
 The dataset stores, per env step: `original_state` (the state block the model was
 shown), `thinking` (its reasoning), `action` (what it did) and a structured
@@ -107,9 +115,14 @@ def main():
                         skipped += 1
                         continue
                     prompt = header + state
-                    rec = {"prompt": prompt, "game": a.game, "mode": a.mode,
-                           "load": load, "pressure": pressure, "seed": seed,
-                           "step": s.get("step"), "action": act}
+                    rec = {"prompt": prompt, 
+                           "game": a.game, 
+                           "mode": a.mode,
+                           "load": load, 
+                           "pressure": pressure, 
+                           "seed": seed,
+                           "step": s.get("step"), 
+                           "action": act}
                     if not a.prompts_only:
                         # the trace usually ends with its own \boxed{...}; only add
                         # one when it is missing, or the label appears twice
