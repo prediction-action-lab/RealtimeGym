@@ -260,6 +260,11 @@ inference_parameters:
 
 ## Testing
 
+For action-only supervised fine-tuning of Qwen3-8B on the published game
+trajectories, see [the fine-tuning guide](training/README.md). It includes
+dataset preparation, LoRA training, and held-out action prediction evaluation
+without chain-of-thought inputs or targets.
+
 Run the comprehensive test suite:
 
 ```bash

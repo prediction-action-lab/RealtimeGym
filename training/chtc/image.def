@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: python:3.11-slim-bookworm
+
+%files
+    pyproject.toml /opt/sft/pyproject.toml
+    uv.lock /opt/sft/uv.lock
+
+%post
+    # CHTC build jobs need writable /tmp for APT's unprivileged helper.
+    # Keep the sticky bit while enabling temporary-file creation.
+    chmod 1777 /tmp
+    apt-get update
+    apt-get install -y --no-install-recommends libgomp1 ca-certificates
+    rm -rf /var/lib/apt/lists/*
+    pip install --no-cache-dir uv==0.12.19
+    UV_CACHE_DIR=/tmp/uv-cache uv sync --project /opt/sft --locked --no-dev --python /usr/local/bin/python
+    rm -rf /tmp/uv-cache
+
+%environment
+    export PATH=/opt/sft/.venv/bin:$PATH
+    export PYTHONUNBUFFERED=1
+    export TOKENIZERS_PARALLELISM=false
+
+%test
+    /opt/sft/.venv/bin/python -c "import torch, transformers, peft; print(torch.__version__, torch.version.cuda)"

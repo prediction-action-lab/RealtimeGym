@@ -1,0 +1,35 @@
+[project]
+name = "realtimegym-finetuning"
+version = "0.1.0"
+description = "Action-only Qwen3 supervised fine-tuning for RealtimeGym"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "torch>=2.6,<2.7",
+    "transformers>=4.57.1,<5",
+    "peft>=0.17,<0.19",
+    "accelerate>=1.10,<2",
+    "datasets>=4,<5",
+    "huggingface-hub>=0.34,<1",
+]
+
+[project.optional-dependencies]
+gameplay = [
+    "pygame>=2.6,<3", "PyYAML>=6,<7", "gym==0.26.2",
+    "imageio>=2.37,<3", "scipy>=1.15,<2", "ipython>=8,<10", "ipywidgets>=8,<9",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "ruff>=0.14,<0.15", "ty>=0.0.86,<0.1"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+extend = "../pyproject.toml"
+
+[tool.ty.environment]
+extra-paths = ["..", "../src"]

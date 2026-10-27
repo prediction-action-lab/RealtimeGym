@@ -1,0 +1,12 @@
+# Run from the generated bundle directory: condor_submit -i build.sub
+universe = vanilla
+log = build.log
+transfer_input_files = image.def, pyproject.toml, uv.lock, stage_model.py, model-config.json
+# Large artifacts are explicitly copied to /staging inside the build job.
+transfer_output_files = ""
++IsBuildJob = true
+requirements = (Target.HasCHTCStaging == true)
+request_cpus = 4
+request_memory = 16GB
+request_disk = 80GB
+queue

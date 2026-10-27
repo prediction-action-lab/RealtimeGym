@@ -60,6 +60,8 @@ realtimegym = ["prompts/*.yaml"]
 
 [tool.ty.src]
 exclude = [
+    # Independent GPU training project, checked with its own environment in CI.
+    "training/**",
     # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
     # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
     "src/realtimegym/environments/overcooked_new/**",

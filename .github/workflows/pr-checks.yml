@@ -9,6 +9,28 @@ on:
       - main
 
 jobs:
+  finetuning:
+    name: Fine-tuning Pipeline
+    runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v4
+      - name: Install isolated training dependencies
+        run: uv sync --project training --locked --extra gameplay
+      - name: Check training code
+        run: |
+          uv run --project training ruff check training
+          uv run --project training ruff format --check training
+          uv run --project training ty check --project training
+      - name: Test data preparation and tiny CPU training
+        run: uv run --project training python -m pytest -c training/pyproject.toml training/tests
+
   lint-and-typecheck:
     name: Lint and Type Check
     runs-on: ubuntu-latest

@@ -2,6 +2,9 @@
 *.csv
 *.log
 *.sh
+!training/chtc/run.sh
+!training/chtc/play.sh
+!training/chtc/overcooked.sh
 visualize_html.py
 debug*
 __pycache__
@@ -22,9 +25,72 @@ src/realtimegym/environments/prompts
 
 # Environment variables (API keys)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+.envrc
+.envrc.*
+!.envrc.example
 
 # Personal config files with API keys
 configs/*-personal.yaml
 configs/my-*.yaml
+*.personal.*
+*.local.*
+
+# Credentials, private keys, and local account settings
+.aws/
+.ssh/
+.gnupg/
+.huggingface/
+.netrc
+.git-credentials
+.npmrc
+.pypirc
+credentials/
+secrets/
+private/
+credentials.*
+secrets.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# Local editor and agent settings may contain personal paths or credentials
+/.idea/
+/.vscode/
+/.agents/
+/.codex/
+
+# Account-specific CHTC paths, SSH examples, and run history
+/training/chtc/train.sub
+/training/chtc/play.sub
+/training/chtc/play-build.sub
+/training/chtc/overcooked.sub
+/training/chtc/README.md
+/training/chtc/PLAY.md
+/training/chtc/OVERCOOKED.md
+
+# Bundles and downloaded results may embed account details and local paths
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.sif
+/results/
+/trained/
+/hf-cache/
+/apptainer-cache/
+/apptainer-tmp/
+
+# Fine-tuning datasets, checkpoints, and isolated Python environments
+/data/
+/outputs/
+/training/.venv/
+/.venv/
+/.pytest_cache/
+/.ruff_cache/
+/training/.pytest_cache/
+/training/.ruff_cache/

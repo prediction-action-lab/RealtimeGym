@@ -1,0 +1,13 @@
+Bootstrap: localimage
+From: realtimegym-sft.sif
+
+%files
+    pyproject.toml /opt/sft/pyproject.toml
+    uv.lock /opt/sft/uv.lock
+
+%post
+    UV_CACHE_DIR=/tmp/uv-cache uv sync --project /opt/sft --locked --no-dev --extra gameplay --python /usr/local/bin/python
+    rm -rf /tmp/uv-cache
+
+%test
+    /opt/sft/.venv/bin/python -c "import torch, pygame, gym, scipy, yaml, imageio, IPython, ipywidgets; print(torch.__version__)"
