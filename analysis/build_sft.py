@@ -62,6 +62,28 @@ def templates(game):
     return out
 
 
+ANYTIME_LEAD = ("**Provisional answer** (before reasoning, in case I am cut off):\n"
+                "$$\n\\boxed{%s}\n$$\n\n"
+                "Now verifying.\n\n")
+
+
+def anytime_body(act, think):
+    """Commit to an answer FIRST, then reason, then restate it.
+
+    The harness reads the LAST \\boxed{} in the output (base.py extract_boxed
+    uses rfind), so a generation cut off mid-reasoning leaves the opening answer
+    standing. That is the point: at 512 tokens the measured policy collapses to
+    pressing "U" on 3200 of 3200 steps, because truncation leaves it with no
+    judgement at all. An answer stated up front survives the cut.
+
+    The model therefore has to predict its own conclusion before working it out.
+    That is a real skill, and the same one the 9-token policy learns -- this
+    format just packs the fast policy and the slow one into a single model.
+    """
+    tail = think if re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:]) \
+        else f"{think}\n\n$$\n\\boxed{{{act}}}\n$$"
+    return ANYTIME_LEAD % act + tail
+
 def fetch(name, cache):
     p = cache / name
     if not p.exists():
@@ -77,7 +99,7 @@ def main():
     ap.add_argument("--loads", nargs="*", default=LOADS)
     ap.add_argument("--pressures", nargs="*", default=PRESSURES)
     ap.add_argument("--seeds", type=int, nargs="*", default=list(range(8)))
-    ap.add_argument("--style", default="full", choices=["full", "short"])
+    ap.add_argument("--style", default="full", choices=["full", "short", "anytime"])
     ap.add_argument("--max-thinking-chars", type=int, default=0,
                     help="drop examples whose reasoning is longer than this (0 = keep all)")
     ap.add_argument("--prompts-only", action="store_true",
@@ -128,6 +150,8 @@ def main():
                         # one when it is missing, or the label appears twice
                         if a.style == "short":
                             body = f"$$\n\\boxed{{{act}}}\n$$"
+                        elif a.style == "anytime":
+                            body = anytime_body(act, think)
                         elif re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:]):
                             body = think
                         else:
