@@ -1,4 +1,4 @@
-"""Convert raw SALT-NLP/RealtimeGym trajectories into action-only examples."""
+"""Convert raw trajectories into action-only or reasoning-and-action examples."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from training.common import (
     file_hash,
     make_prompt,
     normalize_action,
+    normalize_thinking,
     prompt_hash,
 )
 
@@ -32,9 +33,12 @@ def prepare(
     agents: set[str],
     source: dict[str, str] | None = None,
     invalid_action_policy: str = "skip",
+    target_mode: str = "action",
 ) -> dict[str, Any]:
     if invalid_action_policy not in {"skip", "error"}:
         raise ValueError("invalid_action_policy must be skip or error")
+    if target_mode not in {"action", "cot"}:
+        raise ValueError("target_mode must be action or cot")
     if not validation_seeds or not test_seeds or validation_seeds & test_seeds:
         raise ValueError("Validation and test seeds must be nonempty and disjoint")
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -98,14 +102,34 @@ def prepare(
                     }
                 )
                 continue
+            reasoning = None
+            if target_mode == "cot":
+                try:
+                    reasoning = normalize_thinking(row.get("thinking"))
+                except ValueError as error:
+                    skipped[str(error)] += 1
+                    rejected.append(
+                        {
+                            "source_file": path.name,
+                            "step": step,
+                            "game": game,
+                            "reason": str(error),
+                        }
+                    )
+                    continue
             try:
-                prompt = make_prompt(game, row.get("original_state"))
+                prompt = make_prompt(game, row.get("original_state"), target_mode)
             except ValueError as error:
                 raise ValueError(f"{path.name}, step {step}: {error}") from error
             splits[split].append(
                 {
                     "prompt": prompt,
                     "completion": action,
+                    **(
+                        {"target_mode": "cot", "reasoning": reasoning}
+                        if target_mode == "cot"
+                        else {}
+                    ),
                     "metadata": {
                         "game": game,
                         "difficulty": difficulty,
@@ -174,8 +198,19 @@ def prepare(
         "splits": report,
         "removed": dict(skipped),
         "files": file_records,
-        "target": "recorded action; not a guarantee of optimal play",
-        "reasoning_included": False,
+        "target": "recorded thinking and action; not a guarantee of optimal play"
+        if target_mode == "cot"
+        else "recorded action; not a guarantee of optimal play",
+        "target_mode": target_mode,
+        "reasoning_included": target_mode == "cot",
+        **(
+            {
+                "reasoning_field": "thinking",
+                "reasoning_normalization": "remove think delimiters; preserve all remaining trace/plan text",
+            }
+            if target_mode == "cot"
+            else {}
+        ),
         "invalid_action_policy": invalid_action_policy,
     }
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -195,7 +230,8 @@ def main() -> None:
     parser.add_argument(
         "--input-dir", type=Path, help="Existing raw JSON files; skips download"
     )
-    parser.add_argument("--output-dir", type=Path, default=Path("data/sft"))
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--target-mode", choices=("action", "cot"), default="action")
     parser.add_argument("--dataset", default="SALT-NLP/RealtimeGym")
     parser.add_argument("--revision", default="main")
     parser.add_argument(
@@ -213,6 +249,9 @@ def main() -> None:
         default=["reactive", "planning", "agile"],
     )
     args = parser.parse_args()
+    args.output_dir = args.output_dir or Path(
+        "data/sft-cot" if args.target_mode == "cot" else "data/sft"
+    )
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         parser.error(f"Output directory is not empty: {args.output_dir}")
     source: dict[str, str] | None = None
@@ -247,6 +286,7 @@ def main() -> None:
         set(args.agents),
         source,
         args.invalid_action_policy,
+        args.target_mode,
     )
     print(json.dumps({k: v for k, v in manifest.items() if k != "files"}, indent=2))
 

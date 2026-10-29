@@ -25,6 +25,10 @@ def main() -> None:
         f"GPU: {torch.cuda.get_device_name(0)}; torch={torch.__version__}; CUDA={cuda}"
     )
     config = json.loads(Path("training/configs/qwen3-8b.json").read_text())
+    target_mode = config.get("target_mode", "action")
+    print(
+        f"Training target: {target_mode}; max_length={config['max_length']}", flush=True
+    )
     options = config["training"]
     options.update(
         output_dir="outputs/adapter",
@@ -37,10 +41,18 @@ def main() -> None:
     if args.mode == "smoke":
         # Exercise real 8B loading, optimization, validation, and one forced restart.
         options.update(max_steps=5, save_steps=2, eval_steps=2)
+        if target_mode == "cot":
+            # Exercise the longest traces on the GPU without accumulating 16
+            # full-context microbatches per smoke update. Full training keeps 16.
+            options["gradient_accumulation_steps"] = 1
         data = Path("smoke-data")
         data.mkdir(exist_ok=True)
         for split, limit in (("train", 128), ("validation", 16)):
             lines = Path(f"data/sft/{split}.jsonl").read_text().splitlines()
+            if target_mode == "cot":
+                lines.sort(
+                    key=lambda line: len(json.loads(line)["reasoning"]), reverse=True
+                )
             (data / f"{split}.jsonl").write_text("\n".join(lines[:limit]) + "\n")
     Path("job-config.json").write_text(json.dumps(config, indent=2))
     output = Path(options["output_dir"])
@@ -66,7 +78,14 @@ def main() -> None:
     # Preserve diagnostics/checkpoints even on a training error. Do not call it success.
     Path("outputs").mkdir(exist_ok=True)
     Path("outputs/job-result.json").write_text(
-        json.dumps({"mode": args.mode, "training_exit_code": result.returncode}) + "\n"
+        json.dumps(
+            {
+                "mode": args.mode,
+                "target_mode": target_mode,
+                "training_exit_code": result.returncode,
+            }
+        )
+        + "\n"
     )
     with tarfile.open("results.tar.gz", "w:gz") as archive:
         archive.add("outputs", arcname="outputs")

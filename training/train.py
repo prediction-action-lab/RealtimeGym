@@ -1,4 +1,4 @@
-"""Train a LoRA adapter using only action and end-of-response token loss."""
+"""Train a LoRA adapter with masked prompts and supervised response tokens."""
 
 from __future__ import annotations
 
@@ -24,7 +24,10 @@ def tokenize_rows(
         "examples": len(encoded),
         "min_tokens": lengths[0],
         "max_tokens": lengths[-1],
+        "p50_tokens": lengths[int(0.50 * (len(lengths) - 1))],
         "p95_tokens": lengths[int(0.95 * (len(lengths) - 1))],
+        "p99_tokens": lengths[int(0.99 * (len(lengths) - 1))],
+        "total_tokens": sum(lengths),
         "supervised_tokens": sum(
             sum(label != -100 for label in row["labels"]) for row in encoded
         ),
@@ -61,10 +64,14 @@ def main() -> None:
         action="store_true",
         help="Validate/tokenize data without loading model weights",
     )
+    parser.add_argument(
+        "--tokenization-report", type=Path, help="Save preflight token counts as JSON"
+    )
     args = parser.parse_args()
     if args.checkpoint_after_seconds < 0:
         parser.error("--checkpoint-after-seconds must be nonnegative")
     config = json.loads(args.config.read_text())
+    target_mode = config.get("target_mode", "action")
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -75,8 +82,8 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
     train_file = args.data_dir / "train.jsonl"
     validation_file = args.data_dir / "validation.jsonl"
-    train_rows = read_jsonl(train_file)
-    validation_rows = read_jsonl(validation_file)
+    train_rows = read_jsonl(train_file, target_mode)
+    validation_rows = read_jsonl(validation_file, target_mode)
     check_splits(train_rows, validation_rows)
     train_data, train_stats = tokenize_rows(tokenizer, train_rows, config["max_length"])
     validation_data, validation_stats = tokenize_rows(
@@ -84,6 +91,19 @@ def main() -> None:
     )
     stats = {"train": train_stats, "validation": validation_stats}
     print(json.dumps(stats, indent=2))
+    if args.tokenization_report:
+        args.tokenization_report.parent.mkdir(parents=True, exist_ok=True)
+        args.tokenization_report.write_text(
+            json.dumps(
+                {
+                    "target_mode": target_mode,
+                    "max_length": config["max_length"],
+                    "splits": stats,
+                },
+                indent=2,
+            )
+            + "\n"
+        )
     if args.dry_run:
         return
 

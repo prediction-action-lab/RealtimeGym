@@ -59,25 +59,61 @@ REASONING_MARKERS = re.compile(
 )
 
 
-def make_prompt(game: str, state_text: str) -> list[dict[str, str]]:
+def make_prompt(
+    game: str, state_text: str, target_mode: str = "action"
+) -> list[dict[str, str]]:
     """Use only the observed state, never scores, reasoning, or future states."""
     if game not in ACTIONS:
         raise ValueError(f"Unknown game: {game}")
+    if target_mode not in {"action", "cot"}:
+        raise ValueError(f"Unknown target mode: {target_mode}")
     if not isinstance(state_text, str) or not state_text.strip():
         raise ValueError("original_state must be nonempty text")
     if REASONING_MARKERS.search(state_text):
         raise ValueError("original_state contains reasoning/answer markers")
     state_text = state_text.replace("\r\n", "\n").strip()
+    instruction = (
+        "\nChoose the next action. Explain your reasoning inside <think> and "
+        "</think> tags, then reply with exactly one action letter from "
+        + ", ".join(ACTIONS[game])
+        + ". Do not include any other text after the reasoning."
+        if target_mode == "cot"
+        else "\nChoose the next action. Reply with exactly one letter from "
+        + ", ".join(ACTIONS[game])
+        + ". Do not include an explanation or any other text."
+    )
     return [
         {
             "role": "system",
-            "content": RULES[game]
-            + "\nChoose the next action. Reply with exactly one letter from "
-            + ", ".join(ACTIONS[game])
-            + ". Do not include an explanation or any other text.",
+            "content": RULES[game] + instruction,
         },
         {"role": "user", "content": state_text},
     ]
+
+
+def normalize_thinking(value: str) -> str:
+    """Keep the recorded trace body, removing existing thinking delimiters."""
+    if not isinstance(value, str):
+        raise ValueError("missing_thinking")
+    value = value.replace("\r\n", "\n").strip()
+    if not value:
+        raise ValueError("missing_thinking")
+    # Raw planning traces may already wrap reasoning in Qwen-style tags and
+    # append a plan. Keep all text while avoiding nested/duplicate delimiters.
+    value = re.sub(r"<\s*/?think\s*>", "", value, flags=re.IGNORECASE).strip()
+    if not value:
+        raise ValueError("missing_thinking")
+    if value.casefold() in {
+        "still thinking...",
+        "still thinking…",
+        "n/a",
+        "none",
+        "null",
+    }:
+        raise ValueError("placeholder_thinking")
+    if re.search(r"<\|(?:im_start|im_end|endoftext)\|>", value):
+        raise ValueError("chat_control_token_in_thinking")
+    return value
 
 
 def normalize_action(game: str, action: str) -> str:
@@ -123,7 +159,7 @@ def file_hash(path: Path) -> str:
     return digest.hexdigest()
 
 
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
+def read_jsonl(path: Path, target_mode: str = "action") -> list[dict[str, Any]]:
     rows = []
     with path.open(encoding="utf-8") as handle:
         for number, line in enumerate(handle, 1):
@@ -132,22 +168,34 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
             row = json.loads(line)
             metadata = row["metadata"]
             game = metadata["game"]
+            if row.get("target_mode", "action") != target_mode:
+                raise ValueError(
+                    f"{path}:{number}: target mode differs from {target_mode}"
+                )
             # Rebuild from a whitelist, so added metadata cannot enter the prompt.
-            expected = make_prompt(game, row["prompt"][-1]["content"])
+            expected = make_prompt(game, row["prompt"][-1]["content"], target_mode)
             if row["prompt"] != expected:
                 raise ValueError(f"{path}:{number}: unexpected prompt format")
             action = normalize_action(game, row["completion"])
             if action != row["completion"]:
                 raise ValueError(f"{path}:{number}: label is not canonical")
+            if target_mode == "cot":
+                reasoning = normalize_thinking(row.get("reasoning"))
+                if reasoning != row["reasoning"]:
+                    raise ValueError(f"{path}:{number}: reasoning is not canonical")
             rows.append(row)
     if not rows:
         raise ValueError(f"No examples in {path}")
     return rows
 
 
-def encode_prompt(tokenizer: Any, prompt: list[dict[str, str]]) -> list[int]:  # noqa: ANN401
+def encode_prompt(
+    tokenizer: Any,  # noqa: ANN401
+    prompt: list[dict[str, str]],
+    thinking: bool = False,
+) -> list[int]:
     return tokenizer.apply_chat_template(
-        prompt, tokenize=True, add_generation_prompt=True, enable_thinking=False
+        prompt, tokenize=True, add_generation_prompt=True, enable_thinking=thinking
     )
 
 
@@ -156,12 +204,16 @@ def encode_example(
     row: dict[str, Any],
     max_length: int,
 ) -> dict[str, list[int]]:
-    """Mask prompt tokens, supervise the action and EOS, never truncate state."""
-    prompt_ids = encode_prompt(tokenizer, row["prompt"])
-    action_ids = tokenizer.encode(row["completion"], add_special_tokens=False)
-    if not action_ids or tokenizer.eos_token_id is None:
-        raise ValueError("Tokenizer must encode actions and define EOS")
-    target_ids = action_ids + [tokenizer.eos_token_id]
+    """Mask the prompt; supervise the complete response (including CoT if set)."""
+    thinking = row.get("target_mode", "action") == "cot"
+    prompt_ids = encode_prompt(tokenizer, row["prompt"], thinking=thinking)
+    response = row["completion"]
+    if thinking:
+        response = f"<think>\n{row['reasoning']}\n</think>\n\n{response}"
+    response_ids = tokenizer.encode(response, add_special_tokens=False)
+    if not response_ids or tokenizer.eos_token_id is None:
+        raise ValueError("Tokenizer must encode responses and define EOS")
+    target_ids = response_ids + [tokenizer.eos_token_id]
     input_ids = prompt_ids + target_ids
     if len(input_ids) > max_length:
         metadata = row.get("metadata", {})

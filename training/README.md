@@ -1,5 +1,8 @@
 # Qwen3-8B action-only supervised fine-tuning
 
+For a separate adapter supervised on the dataset's `thinking` field and action,
+see [reasoning-and-action LoRA training](COT.md).
+
 This experiment teaches `Qwen/Qwen3-8B` to predict the action recorded in
 `SALT-NLP/RealtimeGym`, given the game rules and the current observed state.
 The recorded action is an imitation label, not a guarantee of optimal play.
