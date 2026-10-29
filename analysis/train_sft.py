@@ -95,6 +95,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--base", default="Qwen/Qwen3-8B")
+    ap.add_argument("--init-adapter", default=None,
+                    help="continue training THIS adapter instead of starting a fresh "
+                         "one. Without it, rejection sampling trains a new adapter "
+                         "from the base model, so the result is a separate small "
+                         "training run -- not an improvement on the policy it sampled.")
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-len", type=int, default=8192)
     ap.add_argument("--epochs", type=float, default=2.0)
@@ -131,10 +136,15 @@ def main():
     model.config.use_cache = False
     model.gradient_checkpointing_enable()
     model.enable_input_require_grads()
-    model = get_peft_model(model, LoraConfig(
-        r=a.rank, lora_alpha=a.rank * 2, lora_dropout=0.05, task_type="CAUSAL_LM",
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                        "gate_proj", "up_proj", "down_proj"]))
+    if a.init_adapter:
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(model, a.init_adapter, is_trainable=True)
+        print(f"continuing from adapter {a.init_adapter}")
+    else:
+        model = get_peft_model(model, LoraConfig(
+            r=a.rank, lora_alpha=a.rank * 2, lora_dropout=0.05, task_type="CAUSAL_LM",
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                            "gate_proj", "up_proj", "down_proj"]))
     model.print_trainable_parameters()
 
     args = TrainingArguments(
