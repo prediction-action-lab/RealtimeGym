@@ -349,6 +349,7 @@ def test_tiny_qwen_lora_train_save_reload_and_evaluate(
     tokenizer: PreTrainedTokenizerFast,
     checkpoint_restart: bool,
     target_mode: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import torch
     from safetensors.torch import load_file
@@ -453,6 +454,7 @@ def test_tiny_qwen_lora_train_save_reload_and_evaluate(
     )
     if target_mode == "cot":
         from peft import PeftModel
+        from training.play import ActionPolicy
 
         run = json.loads((adapter / "run.json").read_text())
         assert run["config"]["target_mode"] == "cot"
@@ -465,6 +467,41 @@ def test_tiny_qwen_lora_train_save_reload_and_evaluate(
         with torch.inference_mode():
             generated = restored.generate(ids, max_new_tokens=4, do_sample=False)
         assert generated.shape[1] > ids.shape[1]
+        policy = ActionPolicy(
+            str(base),
+            "main",
+            adapter,
+            True,
+            1024,
+            16,
+            temperature=0.7,
+            target_mode="cot",
+        )
+        torch.manual_seed(3)
+        first = policy(prompt)
+        first_tokens = policy.last_generation_tokens
+        torch.manual_seed(3)
+        assert policy(prompt) == first
+        assert policy.last_generation_tokens == first_tokens
+        assert 1 <= first_tokens <= 16
+        # Some tokenizers classify think delimiters as special. They must survive
+        # decoding so gameplay can distinguish reasoning from the final action.
+        policy.tokenizer.add_special_tokens(
+            {"additional_special_tokens": ["<think>", "</think>"]}
+        )
+        expected_ids = encode_prompt(policy.tokenizer, prompt, thinking=True)
+        response_ids = policy.tokenizer.encode(
+            "<think> State 7 </think> R", add_special_tokens=False
+        ) + [policy.tokenizer.eos_token_id]
+
+        def generate(input_ids: torch.Tensor, **kwargs: Any) -> torch.Tensor:  # noqa: ANN401
+            assert input_ids.tolist() == [expected_ids]
+            return torch.cat([input_ids, torch.tensor([response_ids])], dim=1)
+
+        monkeypatch.setattr(policy.model, "generate", generate)
+        assert policy(prompt) == "<think> State 7 </think> R"
+        assert policy.last_generation_tokens == len(response_ids)
+        assert not policy.last_generation_truncated
         return
     evaluation = tmp_path / "evaluation"
     subprocess.run(

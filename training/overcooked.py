@@ -7,7 +7,7 @@ import json
 import math
 import statistics
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from training.common import file_hash
 from training.play import ActionPolicy, enable_games, run_episode
@@ -77,7 +77,7 @@ def summarize(
 
 
 def run_evaluation(
-    policy: ActionPolicy,
+    policy: Callable[[list[dict[str, str]]], str],
     output: Path,
     difficulties: list[str],
     tokens_per_step: int,
@@ -136,6 +136,7 @@ def collect(source: Path, difficulties: list[str]) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--adapter", type=Path)
+    parser.add_argument("--target-mode", choices=("action", "cot"), default="action")
     parser.add_argument("--model", default="Qwen/Qwen3-8B")
     parser.add_argument(
         "--revision", default="b968826d9c46dd6066d109eabc6255188de91218"
@@ -150,14 +151,19 @@ def main() -> None:
     parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--top-p", type=float, default=0.8)
     parser.add_argument("--top-k", type=int, default=20)
-    parser.add_argument("--max-length", type=int, default=4096)
-    parser.add_argument("--max-new-tokens", type=int, default=4)
+    parser.add_argument("--max-length", type=int)
+    parser.add_argument("--max-new-tokens", type=int)
     parser.add_argument("--save-gif", action="store_true")
     parser.add_argument("--cpu", action="store_true", help="For tiny-model tests only")
     parser.add_argument(
         "--collect", type=Path, help="Merge extracted results without loading a model"
     )
     args = parser.parse_args()
+    thinking = args.target_mode == "cot"
+    if args.max_length is None:
+        args.max_length = 32768 if thinking else 4096
+    if args.max_new_tokens is None:
+        args.max_new_tokens = args.tokens_per_step if thinking else 4
     if len(set(args.difficulties)) != len(args.difficulties):
         parser.error("Difficulties must be unique")
     if not math.isfinite(args.temperature) or args.temperature <= 0:
@@ -177,6 +183,21 @@ def main() -> None:
         report = collect(args.collect, args.difficulties)
         args.output_dir.mkdir(parents=True, exist_ok=True)
     else:
+        if args.adapter:
+            provenance = args.adapter / "run.json"
+            if provenance.is_file():
+                trained_mode = json.loads(provenance.read_text())["config"].get(
+                    "target_mode", "action"
+                )
+                if trained_mode != args.target_mode:
+                    parser.error(
+                        f"Adapter was trained with target_mode={trained_mode}; "
+                        f"requested {args.target_mode}"
+                    )
+            elif thinking:
+                parser.error(
+                    "CoT adapter requires training run.json to verify its target mode"
+                )
         enable_games()
         policy = ActionPolicy(
             args.model,
@@ -188,6 +209,7 @@ def main() -> None:
             temperature=args.temperature,
             top_p=args.top_p,
             top_k=args.top_k,
+            target_mode=args.target_mode,
         )
         configuration = {
             "protocol": "overcooked-8x4-v1",
@@ -213,9 +235,14 @@ def main() -> None:
             "temperature": args.temperature,
             "top_p": args.top_p,
             "top_k": args.top_k,
-            "thinking": False,
+            "target_mode": args.target_mode,
+            "thinking": thinking,
             "timing": "token-based reactive: one response per step, capped within the step budget",
-            "prompt": "training.common.make_prompt (action-only SFT format)",
+            "prompt": f"training.common.make_prompt (target_mode={args.target_mode})",
+            "response_format": "<think>reasoning</think> ACTION"
+            if thinking
+            else "ACTION",
+            "invalid_response": "execute S; incomplete reasoning is never an action",
         }
         args.output_dir.mkdir(parents=True, exist_ok=True)
         (args.output_dir / "run.json").write_text(

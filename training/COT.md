@@ -120,9 +120,43 @@ uv run --project training python -m training.train \
     --config training/configs/qwen3-8b-cot.json --data-dir data/sft-cot
 ```
 
-The existing four-token, thinking-disabled gameplay commands are for the
-action-only adapter. This adapter needs thinking-enabled prompts, enough output
-tokens for its trace, and final-action parsing after `</think>` when used later
-for inference. Do not interpret an unfinished reasoning response as an action.
+## Overcooked gameplay evaluation
+
+Build a separate thinking-enabled inference bundle for 32 episodes per
+difficulty (8 game seeds × 4 sampling seeds), 96 episodes across easy, medium,
+and hard:
+
+```bash
+python3 -m training.chtc.bundle --gameplay \
+    --config training/configs/qwen3-8b-cot.json \
+    --output-dir outputs/chtc-overcooked-cot-eval
+```
+
+Follow the generated bundle's `README.md` for upload, submission, and collection.
+It uses the completed `cot-train-JOB_ID-results.tar.gz` adapter and the existing
+gameplay image/model cache. Each turn uses the CoT training prompt and
+`enable_thinking=True`; the final action is parsed only after a complete
+`<think>...</think>` block. Reasoning and the final answer share the 8192-token
+step budget. Incomplete or malformed responses execute `S` and are logged;
+an invalid response that exhausts the step budget also counts as a missed deadline.
+
+The 100-step horizon, scripted Bob, sampling settings (temperature 0.7, top-p
+0.8, top-k 20), and reward / 56 normalization match the action-only evaluation.
+This retains the existing sampling settings for comparison; they differ from
+[Qwen's suggested thinking-mode sampling](https://huggingface.co/Qwen/Qwen3-8B#best-practices)
+(temperature 0.6, top-p 0.95). The CoT bundle requests long GPU jobs because
+generating reasoning can take substantially longer than four-token actions.
+
+For direct GPU execution:
+
+```bash
+uv run --project training --extra gameplay python -m training.overcooked \
+    --target-mode cot --adapter trained/outputs/adapter --save-gif \
+    --output-dir outputs/overcooked-cot-evaluation
+```
+
+The existing four-token, thinking-disabled gameplay commands remain for the
+action-only adapter. Seeds 0–5 overlap with training, so these are benchmark
+scenario results rather than held-out-seed generalization.
 
 See [COT_DATA_AUDIT.md](COT_DATA_AUDIT.md) for the prepared counts and real-tokenizer checks.

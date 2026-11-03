@@ -18,6 +18,7 @@ def build_bundle(
 ) -> None:
     config = config or repo / "training/configs/qwen3-8b.json"
     settings = json.loads(config.read_text())
+    cot = settings.get("target_mode") == "cot"
     required = [data / f"{split}.jsonl" for split in ("train", "validation", "test")]
     required.append(data / "manifest.json")
     if gameplay:
@@ -49,7 +50,7 @@ def build_bundle(
     for name in ("pyproject.toml", "uv.lock"):
         shutil.copy2(repo / "training" / name, output / name)
     shutil.copy2(config, output / "model-config.json")
-    if settings.get("target_mode") == "cot":
+    if cot:
         # Reuse the staged image/cache, keeping this experiment's output names
         # distinct from action-only training and its smoke jobs.
         submit = output / "train.sub"
@@ -58,19 +59,46 @@ def build_bundle(
             shutil.copy2(repo / "training" / name, output / name)
     (output / "run.sh").chmod(0o755)
     if gameplay:
-        for name in (
+        gameplay_files = [
             "play-image.def",
             "play-build.sub",
-            "play.sub",
-            "play.sh",
             "PLAY.md",
             "overcooked.sub",
             "overcooked.sh",
             "OVERCOOKED.md",
-        ):
+        ]
+        if cot:
+            gameplay_files.append("OVERCOOKED_COT.md")
+        else:
+            gameplay_files.extend(("play.sub", "play.sh"))
+        for name in gameplay_files:
             shutil.copy2(chtc / name, output / name)
-        (output / "play.sh").chmod(0o755)
+        if not cot:
+            (output / "play.sh").chmod(0o755)
         (output / "overcooked.sh").chmod(0o755)
+        if cot:
+            submit = output / "overcooked.sub"
+            contents = submit.read_text()
+            contents = contents.replace(
+                "train-$(training_job)", "cot-train-$(training_job)"
+            )
+            contents = contents.replace(
+                "$(tokens_per_step)\ntransfer_input_files",
+                "$(tokens_per_step) cot\ntransfer_input_files",
+            )
+            contents = contents.replace(
+                "$(staging_url)/overcooked-", "$(staging_url)/overcooked-cot-"
+            )
+            for field in ("output", "error", "log"):
+                contents = contents.replace(
+                    f"{field} = overcooked-", f"{field} = overcooked-cot-"
+                )
+            contents = contents.replace(
+                '+GPUJobLength = "short"', '+GPUJobLength = "long"'
+            )
+            submit.write_text(contents)
+            # Make the bundle's entrypoint describe its actual inference mode.
+            shutil.copy2(output / "OVERCOOKED_COT.md", output / "README.md")
     # Explicit source allowlist: never archive the whole repo or a virtualenv.
     sources = sorted((repo / "training").glob("*.py"))
     sources += sorted(chtc.glob("*.py"))

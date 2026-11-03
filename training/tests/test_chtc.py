@@ -159,3 +159,44 @@ for game in ('freeway', 'snake', 'overcooked'):
         text=True,
         timeout=120,
     )
+
+
+def test_cot_gameplay_bundle_targets_cot_archive_and_runs_standalone(
+    tmp_path: Path,
+) -> None:
+    repo = Path(__file__).resolve().parents[2]
+    output = tmp_path / "cot-gameplay"
+    build_bundle(
+        repo,
+        tmp_path / "no-dataset",
+        output,
+        gameplay=True,
+        config=repo / "training/configs/qwen3-8b-cot.json",
+    )
+    submit = (output / "overcooked.sub").read_text()
+    assert "cot-train-$(training_job)-results.tar.gz" in submit
+    assert "$(tokens_per_step) cot\n" in submit
+    assert "queue difficulty in easy, medium, hard" in submit
+    assert '+GPUJobLength = "long"' in submit
+    assert "transfer_output_files = overcooked-results.tar.gz" in submit
+    assert "overcooked-results.tar.gz = $(staging_url)/overcooked-cot-" in submit
+    assert not (output / "play.sub").exists()
+    assert (output / "README.md").read_text() == (
+        output / "OVERCOOKED_COT.md"
+    ).read_text()
+    sandbox = tmp_path / "standalone"
+    sandbox.mkdir()
+    with tarfile.open(output / "gameplay-payload.tar.gz") as archive:
+        assert not any(name.startswith("data/") for name in archive.getnames())
+        config_file = archive.extractfile("training/configs/qwen3-8b.json")
+        assert config_file is not None
+        assert json.load(config_file)["target_mode"] == "cot"
+        archive.extractall(sandbox, filter="data")
+    subprocess.run(
+        [sys.executable, "-m", "training.overcooked", "--help"],
+        cwd=sandbox,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )

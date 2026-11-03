@@ -7,6 +7,7 @@ import importlib
 import json
 import os
 import random
+import re
 import sys
 import time
 from pathlib import Path
@@ -34,6 +35,21 @@ def state_description(game: str, state: dict[str, Any]) -> str:
     return description[len(prefix) :]
 
 
+def parse_action(raw: str, game: str, target_mode: str = "action") -> str | None:
+    """Accept only a complete response in the adapter's supervised format."""
+    prediction = raw.strip()
+    if target_mode == "cot":
+        match = re.fullmatch(
+            r"<think>(.*?)</think>\s*([UDLRIS])", prediction, re.DOTALL
+        )
+        if match is None or re.search(r"</?think>", match[1]):
+            return None
+        prediction = match[2]
+    elif target_mode != "action":
+        raise ValueError(f"Unknown target mode: {target_mode}")
+    return prediction if prediction in ACTIONS[game] else None
+
+
 class ActionPolicy:
     def __init__(
         self,
@@ -46,16 +62,21 @@ class ActionPolicy:
         temperature: float | None = None,
         top_p: float = 0.8,
         top_k: int = 20,
+        target_mode: str = "action",
     ) -> None:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
+        if target_mode not in {"action", "cot"}:
+            raise ValueError(f"Unknown target mode: {target_mode}")
+        self.target_mode = target_mode
         self.max_length = max_length
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.top_p = top_p
         self.top_k = top_k
         self.last_generation_tokens = 0
+        self.last_generation_truncated = False
         if adapter:
             from peft import PeftConfig
 
@@ -91,7 +112,7 @@ class ActionPolicy:
     def __call__(self, prompt: list[dict[str, str]]) -> str:
         import torch
 
-        ids = encode_prompt(self.tokenizer, prompt)
+        ids = encode_prompt(self.tokenizer, prompt, thinking=self.target_mode == "cot")
         if len(ids) + self.max_new_tokens > self.max_length:
             raise ValueError("Game state exceeds max-length; state was not truncated")
         inputs = torch.tensor([ids], device=self.model.device)
@@ -112,8 +133,19 @@ class ActionPolicy:
                     return_dict_in_generate=False,
                 ),
             )
-        self.last_generation_tokens = result.shape[1] - len(ids)
-        return self.tokenizer.decode(result[0, len(ids) :], skip_special_tokens=True)
+        generated = result[0, len(ids) :].tolist()
+        self.last_generation_tokens = len(generated)
+        ended = bool(generated and generated[-1] == self.tokenizer.eos_token_id)
+        self.last_generation_truncated = (
+            len(generated) == self.max_new_tokens and not ended
+        )
+        if self.target_mode == "cot":
+            # Preserve think delimiters even when a tokenizer marks them special.
+            # Strip only the terminal EOS; other chat-control tokens remain invalid.
+            return self.tokenizer.decode(
+                generated[:-1] if ended else generated, skip_special_tokens=False
+            )
+        return self.tokenizer.decode(generated, skip_special_tokens=True)
 
 
 def run_episode(
@@ -163,23 +195,26 @@ def run_episode(
     with (output / "trajectory.jsonl").open("w") as handle:
         while not done and steps < max_steps:
             description = state_description(game, observation["state"])
-            prompt = make_prompt(game, description)
+            target_mode = getattr(policy, "target_mode", "action")
+            prompt = make_prompt(game, description, target_mode)
             before = time.perf_counter()
             raw = policy(prompt)
             elapsed = time.perf_counter() - before
             generated_tokens = getattr(policy, "last_generation_tokens", None)
+            prediction = parse_action(raw, game, target_mode)
             within_budget = True
             if tokens_per_step is not None:
                 if not isinstance(generated_tokens, int) or generated_tokens < 0:
                     raise ValueError(
                         "Token-timed gameplay requires generated token counts"
                     )
-                within_budget = generated_tokens <= tokens_per_step
-            prediction = raw.strip()
-            valid = prediction in ACTIONS[game] and within_budget
+                within_budget = generated_tokens <= tokens_per_step and not (
+                    generated_tokens == tokens_per_step and prediction is None
+                )
+            valid = prediction is not None and within_budget
             if not valid and invalid_action == "error":
                 raise ValueError(f"Invalid {game} action at turn {steps}: {raw!r}")
-            action = prediction if valid else "S"
+            action = prediction if valid and prediction is not None else "S"
             next_observation, done, reward, reset = env.step(action)
             # All three wrappers return cumulative reward, not per-step reward.
             row = {
@@ -188,6 +223,11 @@ def run_episode(
                 "original_state": description,
                 "state_string": observation["state_string"],
                 "raw_prediction": raw,
+                "parsed_action": prediction,
+                "target_mode": target_mode,
+                "generation_truncated": getattr(
+                    policy, "last_generation_truncated", None
+                ),
                 "action": action,
                 "valid_action": valid,
                 "reward_delta": float(reward) - reward_total,

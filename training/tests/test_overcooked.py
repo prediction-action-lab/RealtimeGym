@@ -3,15 +3,71 @@
 from __future__ import annotations
 
 import json
+import io
+import os
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from training.overcooked import collect, main, run_evaluation, summarize
-from training.play import ActionPolicy, enable_games, run_episode
+from training.common import make_prompt
+from training.play import ActionPolicy, enable_games, parse_action, run_episode
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("<think>Move toward the pot; don't choose S.</think>\n\nI", "I"),
+        ("<think>\nReason\n</think> R\n", "R"),
+        ("<think></think> S", "S"),
+        ("<think>Still deciding whether to choose U", None),
+        ("<think>U</think>", None),
+        ("U", None),
+        ("Reason </think> U", None),
+        ("<think>Reason</think> U extra", None),
+        ("<think>Reason</think> U D", None),
+        ("<think><think>Reason</think></think> U", None),
+        ("<think>Reason</think><think>More</think> U", None),
+    ],
+)
+def test_cot_parsing_requires_complete_reasoning_and_one_final_action(
+    raw: str, expected: str | None
+) -> None:
+    assert parse_action(raw, "overcooked", "cot") == expected
+    assert parse_action(raw, "overcooked", "action") == ("U" if raw == "U" else None)
+
+
+@pytest.mark.parametrize("trained_mode", ["action", None])
+def test_cot_inference_rejects_wrong_or_unverified_adapter_before_model_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, trained_mode: str | None
+) -> None:
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    if trained_mode:
+        (adapter / "run.json").write_text(
+            json.dumps({"config": {"target_mode": trained_mode}})
+        )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "overcooked",
+            "--adapter",
+            str(adapter),
+            "--target-mode",
+            "cot",
+            "--output-dir",
+            str(tmp_path / "out"),
+        ],
+    )
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert not (tmp_path / "out").exists()
 
 
 def episode_grid(difficulty: str) -> list[dict[str, Any]]:
@@ -188,6 +244,56 @@ def test_full_live_overcooked_grid_and_deadline_fallback(tmp_path: Path) -> None
     assert all(row["action"] == "S" for row in rows)
 
 
+def test_cot_live_grid_uses_training_prompts_and_logs_unfinished_reasoning(
+    tmp_path: Path,
+) -> None:
+    pytest.importorskip("pygame")
+    pytest.importorskip("gym")
+    enable_games()
+
+    class CotPolicy:
+        target_mode = "cot"
+        last_generation_tokens = 8
+
+        def __call__(self, prompt: list[dict[str, str]]) -> str:
+            assert prompt == make_prompt("overcooked", prompt[-1]["content"], "cot")
+            return "<think>I should interact.</think>\n\nI"
+
+    policy = CotPolicy()
+    report = run_evaluation(
+        policy, tmp_path / "grid", ["easy", "medium", "hard"], 8192, False
+    )
+    assert report["episode_count"] == 96
+    assert all(group["episodes"] == 32 for group in report["by_difficulty"].values())
+    assert all(row["invalid_actions"] == 0 for row in report["episodes"])
+
+    class UnfinishedPolicy(CotPolicy):
+        last_generation_tokens = 8192
+
+        def __call__(self, prompt: list[dict[str, str]]) -> str:
+            return "<think>I am considering U but have not finished"
+
+    result = run_episode(
+        UnfinishedPolicy(),
+        "overcooked",
+        "easy",
+        6,
+        tmp_path / "unfinished",
+        2,
+        "stay",
+        False,
+        sampling_seed=0,
+        tokens_per_step=8192,
+    )
+    assert result["invalid_actions"] == result["missed_deadlines"] == 2
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "unfinished/trajectory.jsonl").read_text().splitlines()
+    ]
+    assert all(row["action"] == "S" and row["parsed_action"] is None for row in rows)
+    assert all(row["raw_prediction"].startswith("<think>") for row in rows)
+
+
 def test_failed_chtc_wrapper_returns_nonzero_and_archives_partial_outputs(
     tmp_path: Path,
 ) -> None:
@@ -197,3 +303,64 @@ def test_failed_chtc_wrapper_returns_nonzero_and_archives_partial_outputs(
     )
     assert result.returncode != 0
     assert (tmp_path / "overcooked-results.tar.gz").is_file()
+
+
+@pytest.mark.parametrize("training_mode", ["train", "smoke"])
+def test_cot_wrapper_checks_completed_training_and_passes_inference_mode(
+    tmp_path: Path, training_mode: str
+) -> None:
+    script = Path(__file__).resolve().parents[1] / "chtc/overcooked.sh"
+
+    def archive_files(path: Path, files: dict[str, str]) -> None:
+        with tarfile.open(path, "w:gz") as archive:
+            for name, content in files.items():
+                data = content.encode()
+                info = tarfile.TarInfo(name)
+                info.size = len(data)
+                archive.addfile(info, io.BytesIO(data))
+
+    archive_files(
+        tmp_path / "gameplay-payload.tar.gz",
+        {
+            "training/__init__.py": "",
+            "training/overcooked.py": (
+                "import json, sys\nfrom pathlib import Path\n"
+                "Path('outputs/invocation.json').write_text(json.dumps(sys.argv[1:]))\n"
+            ),
+        },
+    )
+    archive_files(tmp_path / "qwen3-8b-cache.tar", {})
+    archive_files(
+        tmp_path / "adapter.tar.gz",
+        {
+            "outputs/job-result.json": json.dumps(
+                {
+                    "mode": training_mode,
+                    "target_mode": "cot",
+                    "training_exit_code": 0,
+                }
+            ),
+        },
+    )
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    (binary / "python").symlink_to(sys.executable)
+    result = subprocess.run(
+        ["bash", str(script), "easy", "adapter", "adapter.tar.gz", "8192", "cot"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PATH": f"{binary}:{os.environ['PATH']}"},
+        timeout=30,
+    )
+    assert (tmp_path / "overcooked-results.tar.gz").is_file()
+    if training_mode == "train":
+        assert result.returncode == 0, result.stderr
+        arguments = json.loads((tmp_path / "outputs/invocation.json").read_text())
+        assert arguments[arguments.index("--target-mode") + 1] == "cot"
+        assert arguments[arguments.index("--adapter") + 1] == "trained/outputs/adapter"
+        assert arguments[arguments.index("--tokens-per-step") + 1] == "8192"
+    else:
+        assert result.returncode != 0
+        assert "Expected completed full CoT training" in result.stderr
+        assert not (tmp_path / "outputs/invocation.json").exists()
