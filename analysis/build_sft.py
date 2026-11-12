@@ -88,6 +88,19 @@ def anytime_body(act, think):
         else f"{think}\n\n$$\n\\boxed{{{act}}}\n$$"
     return ANYTIME_LEAD % act + tail
 
+def think_wrapped(act, think):
+    """Put the reasoning inside <think>...</think> and the answer AFTER it.
+
+    With Qwen3 thinking enabled the harness splits on </think> and looks for
+    the boxed answer in what follows (base.py: `text.split("</think>")[-1]`),
+    so an answer left inside the think block is invisible to it. The trace
+    usually ends with its own box, so that trailing box is moved out rather
+    than duplicated.
+    """
+    body = re.sub(r"\$*\s*\\boxed\{\s*" + re.escape(act) + r"\s*\}\s*\$*\s*$", "", think).rstrip()
+    return f"<think>\n{body}\n</think>\n\n$$\n\\boxed{{{act}}}\n$$"
+
+
 def fetch(name, cache):
     p = cache / name
     if not p.exists():
@@ -107,6 +120,11 @@ def main():
     ap.add_argument("--budgets", type=int, nargs="*", default=None,
                     help="budget-condition the prompts: one example per budget. "
                          "Needs the harness run with RTG_ANNOUNCE_BUDGET=1.")
+    ap.add_argument("--think-tags", action="store_true",
+                    help="wrap the reasoning in <think>...</think> with the answer "
+                         "after it, for training with Qwen3 thinking ENABLED. Must be "
+                         "paired with --thinking in train_sft.py and enable_thinking: "
+                         "true at inference, or the model sees a template it never saw.")
     ap.add_argument("--tight-below", type=int, default=2048,
                     help="budgets under this get the answer-only target")
     ap.add_argument("--max-thinking-chars", type=int, default=0,
@@ -167,6 +185,8 @@ def main():
                             tight = budget is not None and budget < a.tight_below
                             if a.style == "short" or tight:
                                 body = f"$$\n\\boxed{{{act}}}\n$$"
+                            elif a.think_tags:
+                                body = think_wrapped(act, think)
                             elif a.style == "anytime":
                                 body = anytime_body(act, think)
                             elif re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:]):

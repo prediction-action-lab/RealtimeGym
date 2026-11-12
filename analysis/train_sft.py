@@ -33,7 +33,8 @@ from peft import LoraConfig, get_peft_model
 class Steps(Dataset):
     """One example = one env step. Labels are -100 over the prompt."""
 
-    def __init__(self, path, tok, max_len, balance=None, limit=0, seed=0):
+    def __init__(self, path, tok, max_len, balance=None, limit=0, seed=0, thinking=False):
+        self.thinking = thinking
         rows = [json.loads(l) for l in open(path)]
         if balance:
             rows = rebalance(rows, balance, seed)
@@ -51,9 +52,12 @@ class Steps(Dataset):
 
     def _ids(self, row):
         m = row["messages"]
+        # The chat template differs between the two modes, so this must match
+        # what the server sends at inference. Train on one and serve the other
+        # and the model sees a prompt prefix it never learned.
         prompt = self.tok.apply_chat_template(
             [m[0]], tokenize=False, add_generation_prompt=True,
-            **({"enable_thinking": False} if "qwen3" in self.tok.name_or_path.lower() else {}))
+            **({"enable_thinking": self.thinking} if "qwen3" in self.tok.name_or_path.lower() else {}))
         full = prompt + m[1]["content"] + (self.tok.eos_token or "")
         return (self.tok(prompt, add_special_tokens=False)["input_ids"],
                 self.tok(full, add_special_tokens=False)["input_ids"])
@@ -95,6 +99,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--base", default="Qwen/Qwen3-8B")
+    ap.add_argument("--thinking", action="store_true",
+                    help="build prompts with Qwen3 thinking ENABLED. Pair with "
+                         "--think-tags in build_sft.py and enable_thinking: true "
+                         "in the serving config.")
     ap.add_argument("--init-adapter", default=None,
                     help="continue training THIS adapter instead of starting a fresh "
                          "one. Without it, rejection sampling trains a new adapter "
@@ -116,13 +124,15 @@ def main():
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
 
-    ds = Steps(a.data, tok, a.max_len, None if a.balance == "none" else a.balance, a.limit)
+    ds = Steps(a.data, tok, a.max_len, None if a.balance == "none" else a.balance,
+               a.limit, thinking=a.thinking)
     n_val = max(1, int(len(ds) * a.val_frac))
     idx = list(range(len(ds)))
     random.Random(0).shuffle(idx)
     val = torch.utils.data.Subset(ds, idx[:n_val])
     train = torch.utils.data.Subset(ds, idx[n_val:])
-    print(f"examples: {len(train)} train / {len(val)} val, max_len {a.max_len}")
+    print(f"examples: {len(train)} train / {len(val)} val, max_len {a.max_len}, "
+          f"thinking={'on' if a.thinking else 'off'}")
 
     # Prove the masking: only the assistant turn should survive. A silent
     # off-by-one here trains on the game rules and looks like a normal loss curve.
