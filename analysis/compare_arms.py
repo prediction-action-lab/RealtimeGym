@@ -16,23 +16,25 @@ Usage:
       --base qwen3-8b --treat qwen3-8b-sft_freeway_short_cap \\
       --game freeway --pressure 4096
 """
+
 import argparse
 import csv
 import glob
 import os
 import re
 import sys
+from typing import Any, Optional
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from plot_baseline import effective_budget   # noqa: E402  (same cap detection)
+from plot_baseline import effective_budget  # noqa: E402  (same cap detection)
 
 R_BOUNDS = {"freeway": (0, 89), "snake": (-1, 15), "overcooked": (0, 56)}
 LOAD_NAME = {"E": "EASY", "M": "MEDIUM", "H": "HARD"}
 
 
-def model_tag(args_log, logs_root, default="qwen3-8b"):
+def model_tag(args_log: str, logs_root: str, default: str = "qwen3-8b") -> str:
     d = os.path.dirname(os.path.abspath(args_log))
     stop = os.path.abspath(logs_root)
     while True:
@@ -46,10 +48,14 @@ def model_tag(args_log, logs_root, default="qwen3-8b"):
         d = os.path.dirname(d)
 
 
-def load_cells(logs_root, game, pressure, mode):
+def load_cells(
+    logs_root: str, game: str, pressure: int, mode: str
+) -> dict[tuple[str, str], dict[str, Any]]:
     """-> {(model, load): {seeds: {seed: [rewards]}, tokens: [...], capped: bool}}"""
     out, runs = {}, {}
-    for al in sorted(glob.glob(os.path.join(logs_root, "**", "args.log"), recursive=True)):
+    for al in sorted(
+        glob.glob(os.path.join(logs_root, "**", "args.log"), recursive=True)
+    ):
         cfg, per_seed = {}, {}
         for line in open(al):
             line = line.strip()
@@ -67,7 +73,8 @@ def load_cells(logs_root, game, pressure, mode):
         key = (model_tag(al, logs_root), cfg.get("cognitive_load", "M"))
         declared = int(float(cfg.get("internal_budget", 0) or 0))
         runs.setdefault(key, []).append(
-            (al, per_seed, declared, effective_budget(os.path.dirname(al), declared)))
+            (al, per_seed, declared, effective_budget(os.path.dirname(al), declared))
+        )
 
     # Same rule as the baseline plot: a run silently capped below its declared
     # internal_budget is a different experiment, so it must not be pooled with
@@ -79,8 +86,10 @@ def load_cells(logs_root, game, pressure, mode):
         if honest and len(honest) != len(group):
             for al, _, dec, eff in group:
                 if eff != dec:
-                    print(f"  drop {os.path.basename(os.path.dirname(al))}: "
-                          f"capped at {eff}, cell declares {dec}")
+                    print(
+                        f"  drop {os.path.basename(os.path.dirname(al))}: "
+                        f"capped at {eff}, cell declares {dec}"
+                    )
         cell = out.setdefault(key, {"seeds": {}, "tokens": [], "capped": not honest})
         for al, per_seed, _, _ in use:
             for s, v in per_seed.items():
@@ -98,7 +107,14 @@ def load_cells(logs_root, game, pressure, mode):
     return out
 
 
-def paired(base, treat, lo, hi, rng, iters=20000):
+def paired(
+    base: dict[int, list[float]],
+    treat: dict[int, list[float]],
+    lo: float,
+    hi: float,
+    rng: np.random.Generator,
+    iters: int = 20000,
+) -> Optional[dict[str, Any]]:
     """-> dict of per-seed paired stats, or None if the arms share no seeds."""
     shared = sorted(set(base) & set(treat))
     if not shared:
@@ -113,12 +129,20 @@ def paired(base, treat, lo, hi, rng, iters=20000):
     flips = rng.choice([-1.0, 1.0], size=(iters, len(d)))
     null = (flips * d).mean(axis=1)
     p = float((np.abs(null) >= abs(d.mean()) - 1e-12).mean())
-    return {"n": len(shared), "seeds": shared, "base": b.mean(), "treat": t.mean(),
-            "delta": d.mean(), "ci": (np.percentile(boot, 2.5), np.percentile(boot, 97.5)),
-            "p": p, "wins": int((d > 0).sum()), "losses": int((d < 0).sum())}
+    return {
+        "n": len(shared),
+        "seeds": shared,
+        "base": b.mean(),
+        "treat": t.mean(),
+        "delta": d.mean(),
+        "ci": (np.percentile(boot, 2.5), np.percentile(boot, 97.5)),
+        "p": p,
+        "wins": int((d > 0).sum()),
+        "losses": int((d < 0).sum()),
+    }
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--logs_root", default="rtg_results")
     ap.add_argument("--base", required=True, help="model tag of the control arm")
@@ -142,26 +166,31 @@ def main():
     print(f"{a.game} / {a.mode} / pressure {a.pressure}")
     print(f"  control  {a.base}")
     print(f"  treated  {a.treat}\n")
-    hdr = (f"{'load':8s} {'n':>3s} {'control':>7s} {'treat':>7s} {'delta':>8s} "
-           f"{'95% CI':>18s} {'p':>7s} {'w/l':>7s}")
-    print(hdr); print("-" * len(hdr))
+    hdr = (
+        f"{'load':8s} {'n':>3s} {'control':>7s} {'treat':>7s} {'delta':>8s} "
+        f"{'95% CI':>18s} {'p':>7s} {'w/l':>7s}"
+    )
+    print(hdr)
+    print("-" * len(hdr))
     rows = []
     for L in a.loads:
-        b = cells.get((a.base, L)), cells.get((a.treat, L))
-        if not all(b):
+        cb, ct = cells.get((a.base, L)), cells.get((a.treat, L))
+        if cb is None or ct is None:
             print(f"{LOAD_NAME.get(L, L):8s}  -- one arm not measured")
             continue
-        r = paired(b[0]["seeds"], b[1]["seeds"], lo, hi, rng)
+        r = paired(cb["seeds"], ct["seeds"], lo, hi, rng)
         if r is None:
             print(f"{LOAD_NAME.get(L, L):8s}  -- arms share no env seed")
             continue
-        rows.append((L, r, b))
+        rows.append((L, r, (cb, ct)))
         ci = f"[{r['ci'][0]:+.3f}, {r['ci'][1]:+.3f}]"
         star = "*" if r["p"] < 0.05 else " "
-        print(f"{LOAD_NAME.get(L, L):8s} {r['n']:>3d} {r['base']:>7.3f} {r['treat']:>7.3f} "
-              f"{r['delta']:>+8.3f} {ci:>18s} {r['p']:>6.3f}{star} "
-              f"{r['wins']}/{r['losses']}")
-        if b[0]["capped"] != b[1]["capped"]:
+        print(
+            f"{LOAD_NAME.get(L, L):8s} {r['n']:>3d} {r['base']:>7.3f} {r['treat']:>7.3f} "
+            f"{r['delta']:>+8.3f} {ci:>18s} {r['p']:>6.3f}{star} "
+            f"{r['wins']}/{r['losses']}"
+        )
+        if cb["capped"] != ct["capped"]:
             print(f"{'':8s}     ^ arms differ in effective budget; not a clean A/B")
 
     print("\ncost per decision (median tokens generated; the clock advances with it)")
@@ -169,11 +198,12 @@ def main():
         mb = np.median(cb["tokens"]) if cb["tokens"] else float("nan")
         mt = np.median(ct["tokens"]) if ct["tokens"] else float("nan")
         if mb == mb and mt == mt and mb and mt:
-            ratio = (f"{mb / mt:.1f}x cheaper" if mt <= mb
-                     else f"{mt / mb:.1f}x dearer")
+            ratio = f"{mb / mt:.1f}x cheaper" if mt <= mb else f"{mt / mb:.1f}x dearer"
         else:
             ratio = "n/a"
-        print(f"  {LOAD_NAME.get(L, L):8s} control {mb:>7.0f}   treat {mt:>7.0f}   {ratio}")
+        print(
+            f"  {LOAD_NAME.get(L, L):8s} control {mb:>7.0f}   treat {mt:>7.0f}   {ratio}"
+        )
 
     if rows:
         print("\nw/l counts seeds where the treated arm beat / lost to the control.")

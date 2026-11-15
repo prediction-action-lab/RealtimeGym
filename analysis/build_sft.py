@@ -32,6 +32,7 @@ Usage:
   python analysis/build_sft.py --game freeway --mode reactive --out sft_freeway.jsonl
   python analysis/build_sft.py --game freeway --mode reactive --style short --loads easy medium
 """
+
 import argparse
 import json
 import os
@@ -39,17 +40,19 @@ import re
 import sys
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "src"))
 # one definition, shared with the harness, so train and eval prompts cannot drift
 from realtimegym.budget import budget_line  # noqa: E402
+
 HF = "https://huggingface.co/datasets/SALT-NLP/RealtimeGym/resolve/main"
 LOADS = ["easy", "medium", "hard"]
 PRESSURES = ["4k", "8k", "16k", "32k"]
 
 
-def templates(game):
+def templates(game: str) -> dict[str, str]:
     """Read the block scalars out of prompts/<game>.yaml without needing pyyaml."""
     text = (REPO / "src" / "realtimegym" / "prompts" / f"{game}.yaml").read_text()
     out, key, buf = {}, None, []
@@ -66,12 +69,14 @@ def templates(game):
     return out
 
 
-ANYTIME_LEAD = ("**Provisional answer** (before reasoning, in case I am cut off):\n"
-                "$$\n\\boxed{%s}\n$$\n\n"
-                "Now verifying.\n\n")
+ANYTIME_LEAD = (
+    "**Provisional answer** (before reasoning, in case I am cut off):\n"
+    "$$\n\\boxed{%s}\n$$\n\n"
+    "Now verifying.\n\n"
+)
 
 
-def anytime_body(act, think):
+def anytime_body(act: str, think: str) -> str:
     """Commit to an answer FIRST, then reason, then restate it.
 
     The harness reads the LAST \\boxed{} in the output (base.py extract_boxed
@@ -84,11 +89,15 @@ def anytime_body(act, think):
     That is a real skill, and the same one the 9-token policy learns -- this
     format just packs the fast policy and the slow one into a single model.
     """
-    tail = think if re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:]) \
+    tail = (
+        think
+        if re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:])
         else f"{think}\n\n$$\n\\boxed{{{act}}}\n$$"
+    )
     return ANYTIME_LEAD % act + tail
 
-def think_wrapped(act, think):
+
+def think_wrapped(act: str, think: str) -> str:
     """Put the reasoning inside <think>...</think> and the answer AFTER it.
 
     With Qwen3 thinking enabled the harness splits on </think> and looks for
@@ -97,11 +106,13 @@ def think_wrapped(act, think):
     usually ends with its own box, so that trailing box is moved out rather
     than duplicated.
     """
-    body = re.sub(r"\$*\s*\\boxed\{\s*" + re.escape(act) + r"\s*\}\s*\$*\s*$", "", think).rstrip()
+    body = re.sub(
+        r"\$*\s*\\boxed\{\s*" + re.escape(act) + r"\s*\}\s*\$*\s*$", "", think
+    ).rstrip()
     return f"<think>\n{body}\n</think>\n\n$$\n\\boxed{{{act}}}\n$$"
 
 
-def fetch(name, cache):
+def fetch(name: str, cache: Path) -> list[dict[str, Any]]:
     p = cache / name
     if not p.exists():
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -109,34 +120,61 @@ def fetch(name, cache):
     return json.loads(p.read_text())
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--game", default="freeway", choices=["freeway", "snake", "overcooked"])
-    ap.add_argument("--mode", default="reactive", choices=["reactive", "planning", "agile"])
+    ap.add_argument(
+        "--game", default="freeway", choices=["freeway", "snake", "overcooked"]
+    )
+    ap.add_argument(
+        "--mode", default="reactive", choices=["reactive", "planning", "agile"]
+    )
     ap.add_argument("--loads", nargs="*", default=LOADS)
     ap.add_argument("--pressures", nargs="*", default=PRESSURES)
     ap.add_argument("--seeds", type=int, nargs="*", default=list(range(8)))
     ap.add_argument("--style", default="full", choices=["full", "short", "anytime"])
-    ap.add_argument("--budgets", type=int, nargs="*", default=None,
-                    help="budget-condition the prompts: one example per budget. "
-                         "Needs the harness run with RTG_ANNOUNCE_BUDGET=1.")
-    ap.add_argument("--think-tags", action="store_true",
-                    help="wrap the reasoning in <think>...</think> with the answer "
-                         "after it, for training with Qwen3 thinking ENABLED. Must be "
-                         "paired with --thinking in train_sft.py and enable_thinking: "
-                         "true at inference, or the model sees a template it never saw.")
-    ap.add_argument("--tight-below", type=int, default=2048,
-                    help="budgets under this get the answer-only target")
-    ap.add_argument("--max-thinking-chars", type=int, default=0,
-                    help="drop examples whose reasoning is longer than this (0 = keep all)")
-    ap.add_argument("--prompts-only", action="store_true",
-                    help="emit prompts without labels, as an RL prompt set")
+    ap.add_argument(
+        "--budgets",
+        type=int,
+        nargs="*",
+        default=None,
+        help="budget-condition the prompts: one example per budget. "
+        "Needs the harness run with RTG_ANNOUNCE_BUDGET=1.",
+    )
+    ap.add_argument(
+        "--think-tags",
+        action="store_true",
+        help="wrap the reasoning in <think>...</think> with the answer "
+        "after it, for training with Qwen3 thinking ENABLED. Must be "
+        "paired with --thinking in train_sft.py and enable_thinking: "
+        "true at inference, or the model sees a template it never saw.",
+    )
+    ap.add_argument(
+        "--tight-below",
+        type=int,
+        default=2048,
+        help="budgets under this get the answer-only target",
+    )
+    ap.add_argument(
+        "--max-thinking-chars",
+        type=int,
+        default=0,
+        help="drop examples whose reasoning is longer than this (0 = keep all)",
+    )
+    ap.add_argument(
+        "--prompts-only",
+        action="store_true",
+        help="emit prompts without labels, as an RL prompt set",
+    )
     ap.add_argument("--cache", default=str(REPO / "rtg_hf_cache"))
     ap.add_argument("--out", default="sft.jsonl")
     a = ap.parse_args()
 
     tpl = templates(a.game)
-    header = tpl["fast_agent_prompt"] if a.mode == "reactive" else tpl["slow_agent_prompt"] + tpl["action_format_prompt"]
+    header = (
+        tpl["fast_agent_prompt"]
+        if a.mode == "reactive"
+        else tpl["slow_agent_prompt"] + tpl["action_format_prompt"]
+    )
 
     cache = Path(a.cache)
     rows, skipped, missing, lens = [], 0, 0, []
@@ -156,7 +194,9 @@ def main():
                     # a few records carry a whole action SEQUENCE ("UDUDSDDS...")
                     # instead of one move -- planning output that leaked into a
                     # reactive file. One step = one action.
-                    valid = {"freeway": "UDS", "snake": "LRUD", "overcooked": "UDLRSI"}[a.game]
+                    valid = {"freeway": "UDS", "snake": "LRUD", "overcooked": "UDLRSI"}[
+                        a.game
+                    ]
                     if not act or not state or len(act) != 1 or act not in valid:
                         skipped += 1
                         continue
@@ -168,17 +208,19 @@ def main():
                     # each paired with the longest target that budget can
                     # actually finish. Pairing a tight budget with a long
                     # target would teach the model to overrun, not to allocate.
-                    for budget in (a.budgets or [None]):
+                    for budget in a.budgets or [None]:
                         p_b = prompt if budget is None else prompt + budget_line(budget)
-                        rec = {"prompt": p_b,
-                               "game": a.game,
-                               "mode": a.mode,
-                               "load": load,
-                               "pressure": pressure,
-                               "seed": seed,
-                               "step": s.get("step"),
-                               "action": act,
-                               "budget": budget}
+                        rec = {
+                            "prompt": p_b,
+                            "game": a.game,
+                            "mode": a.mode,
+                            "load": load,
+                            "pressure": pressure,
+                            "seed": seed,
+                            "step": s.get("step"),
+                            "action": act,
+                            "budget": budget,
+                        }
                         if not a.prompts_only:
                             # the trace usually ends with its own \boxed{...};
                             # only add one when it is missing
@@ -189,12 +231,17 @@ def main():
                                 body = think_wrapped(act, think)
                             elif a.style == "anytime":
                                 body = anytime_body(act, think)
-                            elif re.search(r"\\boxed\{\s*" + re.escape(act) + r"\s*\}", think[-400:]):
+                            elif re.search(
+                                r"\\boxed\{\s*" + re.escape(act) + r"\s*\}",
+                                think[-400:],
+                            ):
                                 body = think
                             else:
                                 body = f"{think}\n\n$$\n\\boxed{{{act}}}\n$$"
-                            rec["messages"] = [{"role": "user", "content": p_b},
-                                               {"role": "assistant", "content": body}]
+                            rec["messages"] = [
+                                {"role": "user", "content": p_b},
+                                {"role": "assistant", "content": body},
+                            ]
                             lens.append(len(body))
                         rows.append(rec)
 
@@ -206,9 +253,13 @@ def main():
     print(f"  files missing: {missing}  steps skipped: {skipped}")
     if lens:
         lens.sort()
-        approx = lambda c: c / 4          # ~4 chars per token, rough
-        print(f"  completion chars: median {lens[len(lens)//2]}  p90 {lens[int(.9*len(lens))]}  max {lens[-1]}")
-        print(f"  ~tokens:          median {approx(lens[len(lens)//2]):.0f}  p90 {approx(lens[int(.9*len(lens))]):.0f}")
+        approx = lambda c: c / 4  # ~4 chars per token, rough
+        print(
+            f"  completion chars: median {lens[len(lens) // 2]}  p90 {lens[int(0.9 * len(lens))]}  max {lens[-1]}"
+        )
+        print(
+            f"  ~tokens:          median {approx(lens[len(lens) // 2]):.0f}  p90 {approx(lens[int(0.9 * len(lens))]):.0f}"
+        )
     acts = {}
     for r in rows:
         acts[r["action"]] = acts.get(r["action"], 0) + 1

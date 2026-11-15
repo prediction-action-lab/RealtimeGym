@@ -13,19 +13,30 @@ Usage:
   python analysis/plot_baseline.py --logs_root logs
   python analysis/plot_baseline.py --logs_root logs --out analysis/figures
 """
+
 import argparse
 import csv
 import glob
 import os
 import re
+from collections.abc import Callable
+from typing import Any, Optional, Union
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 
 # paper Table 4
 R_BOUNDS = {"freeway": (0, 89), "snake": (-1, 15), "overcooked": (0, 56)}
+# One parsed run; one x position on an axis (a load letter or a token budget).
+Row = dict[str, Any]
+XVal = Union[str, int]
+Point = tuple[XVal, float, float, int]  # (x, mean, std, n)
+Series = dict[str, list[Point]]  # mode -> points
+
 LOAD_ORDER = {"E": 0, "M": 1, "H": 2}
 LOAD_NAME = {"E": "EASY", "M": "MEDIUM", "H": "HARD"}
 PALETTE = {"agile": "#009E73", "reactive": "#0072B2", "planning": "#E69F00"}
@@ -34,15 +45,23 @@ MARKER = {"agile": "*", "reactive": "s", "planning": "^"}
 MSIZE = {"agile": 15, "reactive": 10, "planning": 11}
 MAXLINE = "#C0392B"
 
-plt.rcParams.update({
-    "figure.dpi": 150, "font.size": 11,
-    "axes.edgecolor": "#888888", "axes.linewidth": 0.8,
-    "axes.grid": True, "grid.color": "#DDDDDD", "grid.linewidth": 0.8,
-    "axes.axisbelow": True, "axes.spines.top": False, "axes.spines.right": False,
-})
+plt.rcParams.update(
+    {
+        "figure.dpi": 150,
+        "font.size": 11,
+        "axes.edgecolor": "#888888",
+        "axes.linewidth": 0.8,
+        "axes.grid": True,
+        "grid.color": "#DDDDDD",
+        "grid.linewidth": 0.8,
+        "axes.axisbelow": True,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+    }
+)
 
 
-def parse_args_log(path):
+def parse_args_log(path: str) -> tuple[dict[str, str], list[float]]:
     """-> (config dict, [rewards])"""
     cfg, rewards = {}, []
     with open(path) as f:
@@ -60,7 +79,7 @@ def parse_args_log(path):
     return cfg, rewards
 
 
-def effective_budget(run_dir, declared):
+def effective_budget(run_dir: str, declared: int) -> int:
     """The reactive thread generates at min(internal_budget, max_tokens), and
     max_tokens lives in the model config -- which args.log does not record. A
     run whose generations stop dead at a power of two below the declared budget
@@ -86,7 +105,7 @@ def effective_budget(run_dir, declared):
     return best if best < declared and best & (best - 1) == 0 else declared
 
 
-def model_tag(args_log, logs_root, default):
+def model_tag(args_log: str, logs_root: str, default: str) -> str:
     """The job writes logs/<runtag>/model.txt. args.log only names the config
     file, which is identical for every model (the job patches the model inside),
     so without model.txt all runs would look like the same model."""
@@ -103,9 +122,11 @@ def model_tag(args_log, logs_root, default):
         d = os.path.dirname(d)
 
 
-def load_runs(logs_root, default_model="qwen3-8b"):
+def load_runs(logs_root: str, default_model: str = "qwen3-8b") -> list[Row]:
     rows = []
-    for args_log in sorted(glob.glob(os.path.join(logs_root, "**", "args.log"), recursive=True)):
+    for args_log in sorted(
+        glob.glob(os.path.join(logs_root, "**", "args.log"), recursive=True)
+    ):
         cfg, rewards = parse_args_log(args_log)
         if not rewards:
             print(f"  skip (no results yet): {os.path.dirname(args_log)}")
@@ -119,22 +140,24 @@ def load_runs(logs_root, default_model="qwen3-8b"):
         declared = int(float(cfg.get("internal_budget", 0) or 0))
         eff = effective_budget(os.path.dirname(args_log), declared)
         for r in rewards:
-            rows.append({
-                "game": game,
-                "load": cfg.get("cognitive_load", "M"),
-                "pressure": int(float(cfg.get("time_pressure", 0))),
-                "mode": cfg.get("mode", "agile"),
-                "model": model_tag(args_log, logs_root, default_model),
-                "budget": declared,
-                "eff_budget": eff,
-                "run": os.path.basename(os.path.dirname(args_log)),
-                "reward": r,
-                "score": (r - lo) / (hi - lo),
-            })
+            rows.append(
+                {
+                    "game": game,
+                    "load": cfg.get("cognitive_load", "M"),
+                    "pressure": int(float(cfg.get("time_pressure", 0))),
+                    "mode": cfg.get("mode", "agile"),
+                    "model": model_tag(args_log, logs_root, default_model),
+                    "budget": declared,
+                    "eff_budget": eff,
+                    "run": os.path.basename(os.path.dirname(args_log)),
+                    "reward": r,
+                    "score": (r - lo) / (hi - lo),
+                }
+            )
     return drop_capped(rows)
 
 
-def drop_capped(rows):
+def drop_capped(rows: list[Row]) -> list[Row]:
     """Within a cell, prefer runs that actually ran at the declared budget.
 
     Some early runs were silently capped by the model config's max_tokens. They
@@ -143,8 +166,10 @@ def drop_capped(rows):
     """
     cells = {}
     for r in rows:
-        cells.setdefault((r["model"], r["game"], r["mode"], r["load"],
-                          r["pressure"], r["budget"]), set()).add(r["eff_budget"])
+        cells.setdefault(
+            (r["model"], r["game"], r["mode"], r["load"], r["pressure"], r["budget"]),
+            set(),
+        ).add(r["eff_budget"])
     drop = {k for k, v in cells.items() if len(v) > 1}
     if not drop:
         return rows
@@ -162,7 +187,7 @@ def drop_capped(rows):
     return kept
 
 
-def warn_capped(rows):
+def warn_capped(rows: list[Row]) -> None:
     """Cells with no uncapped run are kept -- dropping them would erase a whole
     model's baseline -- but a curve measured at an effective 2048 cannot be
     compared with one measured at 4096 without saying so."""
@@ -170,14 +195,17 @@ def warn_capped(rows):
     for r in rows:
         if r["eff_budget"] != r["budget"]:
             still.setdefault((r["model"], r["game"], r["mode"]), set()).add(
-                (r["eff_budget"], r["budget"]))
+                (r["eff_budget"], r["budget"])
+            )
     for (model, game, mode), pairs in sorted(still.items()):
         for eff, dec in sorted(pairs):
-            print(f"  NOTE {model}/{game}/{mode} ran at an effective {eff} "
-                  f"(declares {dec}); not comparable to a {dec} curve")
+            print(
+                f"  NOTE {model}/{game}/{mode} ran at an effective {eff} "
+                f"(declares {dec}); not comparable to a {dec} curve"
+            )
 
 
-def pick_slice(rows, vary, fixed):
+def pick_slice(rows: list[Row], vary: str, fixed: str) -> Optional[XVal]:
     """Choose the value of `fixed` that has the most distinct `vary` values.
 
     The paper holds one axis constant while sweeping the other (Fig. 5: load is
@@ -189,11 +217,21 @@ def pick_slice(rows, vary, fixed):
         counts.setdefault(r[fixed], set()).add(r[vary])
     if not counts:
         return None
-    return max(counts.items(), key=lambda kv: (len(kv[1]), -LOAD_ORDER.get(kv[0], 0)
-                                               if fixed == "load" else kv[0]))[0]
+    return max(
+        counts.items(),
+        key=lambda kv: (
+            len(kv[1]),
+            -LOAD_ORDER.get(kv[0], 0) if fixed == "load" else kv[0],
+        ),
+    )[0]
 
 
-def agg(rows, key, fixed=None, fixed_val=None):
+def agg(
+    rows: list[Row],
+    key: str,
+    fixed: Optional[str] = None,
+    fixed_val: Optional[XVal] = None,
+) -> Series:
     """-> {mode: [(x, mean, std, n), ...]} sorted by x"""
     if fixed is not None and fixed_val is not None:
         rows = [r for r in rows if r[fixed] == fixed_val]
@@ -202,12 +240,16 @@ def agg(rows, key, fixed=None, fixed_val=None):
         out.setdefault(row["mode"], {}).setdefault(row[key], []).append(row["score"])
     result = {}
     for mode, by_x in out.items():
-        pts = [(x, float(np.mean(v)), float(np.std(v)), len(v)) for x, v in by_x.items()]
-        result[mode] = sorted(pts, key=lambda t: LOAD_ORDER.get(t[0], t[0]) if key == "load" else t[0])
+        pts = [
+            (x, float(np.mean(v)), float(np.std(v)), len(v)) for x, v in by_x.items()
+        ]
+        result[mode] = sorted(
+            pts, key=lambda t: LOAD_ORDER.get(t[0], t[0]) if key == "load" else t[0]
+        )
     return result
 
 
-def _order(key):
+def _order(key: str) -> Callable[[XVal], int]:
     # Paper convention: both axes read LOW -> HIGH difficulty left to right.
     # For time pressure that means MORE tokens/step on the left (32K ... 4K).
     if key == "load":
@@ -215,7 +257,7 @@ def _order(key):
     return lambda x: -x
 
 
-def _runs(idx):
+def _runs(idx: list[int]) -> list[list[int]]:
     """Split sorted axis positions into runs of consecutive integers.
     [0, 2] -> [[0], [1]] (indices into idx); [0, 1, 2] -> [[0, 1, 2]]."""
     runs, cur = [], []
@@ -229,7 +271,9 @@ def _runs(idx):
     return runs
 
 
-def _plot(ax, series, key, xlabel, reactive_flat=False):
+def _plot(
+    ax: Axes, series: Series, key: str, xlabel: str, reactive_flat: bool = False
+) -> bool:
     """Plot every mode on a SHARED x axis, paper-style.
 
     - union of x values across modes, so modes with different coverage align
@@ -239,18 +283,27 @@ def _plot(ax, series, key, xlabel, reactive_flat=False):
     - reactive_flat: in token mode the reactive agent never reads time_pressure
       (its output is capped by internal_budget alone), so one measured cell is
       valid at every pressure. Drawn dashed and labelled as such.
+
+    Returns whether it drew a bridge across an unmeasured cell, so the caller
+    can add the footnote that explains the faded dashed segments.
     """
+    bridged = False
     all_x = sorted({p[0] for pts in series.values() for p in pts}, key=_order(key))
     pos = {x: i for i, x in enumerate(all_x)}
 
     series = {m: list(pts) for m, pts in series.items()}
     flat_note = False
-    if reactive_flat and key == "pressure" and len(series.get("reactive", [])) == 1 and len(all_x) > 1:
+    if (
+        reactive_flat
+        and key == "pressure"
+        and len(series.get("reactive", [])) == 1
+        and len(all_x) > 1
+    ):
         _, y, e, n = series["reactive"][0]
         series["reactive"] = [(x, y, e, n) for x in all_x]
         flat_note = True
 
-    for mode in ["planning", "reactive", "agile"]:          # agile drawn on top
+    for mode in ["planning", "reactive", "agile"]:  # agile drawn on top
         if mode not in series:
             continue
         pts = sorted(series[mode], key=lambda t: pos[t[0]])
@@ -262,62 +315,145 @@ def _plot(ax, series, key, xlabel, reactive_flat=False):
         z = 3 if mode == "agile" else 2
         # markers + error bars only; lines are drawn per contiguous run below so
         # a missing cell (e.g. planning at MEDIUM) is a gap, not an interpolation
-        ax.errorbar(xs, ys, yerr=es, marker=MARKER.get(mode, "o"),
-                    markersize=MSIZE.get(mode, 10), ls="none", capsize=4,
-                    elinewidth=1, alpha=0.95, color=color,
-                    markeredgecolor="white", markeredgewidth=0.8, zorder=z + 0.5)
+        ax.errorbar(
+            xs,
+            ys,
+            yerr=es,
+            marker=MARKER.get(mode, "o"),
+            markersize=MSIZE.get(mode, 10),
+            ls="none",
+            capsize=4,
+            elinewidth=1,
+            alpha=0.95,
+            color=color,
+            markeredgecolor="white",
+            markeredgewidth=0.8,
+            zorder=z + 0.5,
+        )
         for seg in _runs(xs):
-            ax.plot([xs[i] for i in seg], [ys[i] for i in seg], lw=2.2,
-                    ls="--" if dashed else "-", color=color, zorder=z)
+            ax.plot(
+                [xs[i] for i in seg],
+                [ys[i] for i in seg],
+                lw=2.2,
+                ls="--" if dashed else "-",
+                color=color,
+                zorder=z,
+            )
         # join measured points across unmeasured cells: dashed + faded, so the
         # line reads as continuous without implying a value at the gap
         for k in range(len(xs) - 1):
             if xs[k + 1] - xs[k] > 1:
-                ax.plot([xs[k], xs[k + 1]], [ys[k], ys[k + 1]], lw=1.6, ls=(0, (4, 3)),
-                        color=color, alpha=0.55, zorder=z - 0.5)
-                ax._bridged = True
-        ax.plot([], [], marker=MARKER.get(mode, "o"), markersize=MSIZE.get(mode, 10),
-                lw=2.2, ls="--" if dashed else "-", color=color,
-                markeredgecolor="white", label=LABEL.get(mode, mode))
+                ax.plot(
+                    [xs[k], xs[k + 1]],
+                    [ys[k], ys[k + 1]],
+                    lw=1.6,
+                    ls=(0, (4, 3)),
+                    color=color,
+                    alpha=0.55,
+                    zorder=z - 0.5,
+                )
+                bridged = True
+        ax.plot(
+            [],
+            [],
+            marker=MARKER.get(mode, "o"),
+            markersize=MSIZE.get(mode, 10),
+            lw=2.2,
+            ls="--" if dashed else "-",
+            color=color,
+            markeredgecolor="white",
+            label=LABEL.get(mode, mode),
+        )
     if flat_note:
-        ax.text(0.99, 0.97, "Reactive: one measured cell, drawn flat\n"
-                "(token mode caps it by internal_budget, not pressure)",
-                transform=ax.transAxes, ha="right", va="top", fontsize=8, color="#555555")
+        ax.text(
+            0.99,
+            0.97,
+            "Reactive: one measured cell, drawn flat\n"
+            "(token mode caps it by internal_budget, not pressure)",
+            transform=ax.transAxes,
+            ha="right",
+            va="top",
+            fontsize=8,
+            color="#555555",
+        )
 
     # Best single-system baseline + agile's margin over it. Only where BOTH
     # baselines exist at that x: with planning missing, "max" is just reactive,
     # and the margin would overstate agile's advantage.
-    have = {m: {x: y for x, y, _, _ in series.get(m, [])} for m in ("reactive", "planning")}
-    base = {x: max(have["reactive"][x], have["planning"][x])
-            for x in have["reactive"] if x in have["planning"]}
+    have = {
+        m: {x: y for x, y, _, _ in series.get(m, [])} for m in ("reactive", "planning")
+    }
+    base = {
+        x: max(have["reactive"][x], have["planning"][x])
+        for x in have["reactive"]
+        if x in have["planning"]
+    }
     missing = [x for x in all_x if x not in base]
     if missing and (have["reactive"] or have["planning"]):
-        names = ", ".join(LOAD_NAME.get(x, x) if key == "load"
-                          else (f"{x // 1024}K" if x >= 1024 else str(x)) for x in missing)
-        ax.text(0.01, 0.01, f"no margin shown at {names}: planning/reactive not both run",
-                transform=ax.transAxes, ha="left", va="bottom", fontsize=7.5, color="#999999")
+        names = ", ".join(
+            LOAD_NAME.get(x, x)
+            if key == "load"
+            else (f"{x // 1024}K" if x >= 1024 else str(x))
+            for x in missing
+        )
+        ax.text(
+            0.01,
+            0.01,
+            f"no margin shown at {names}: planning/reactive not both run",
+            transform=ax.transAxes,
+            ha="left",
+            va="bottom",
+            fontsize=7.5,
+            color="#999999",
+        )
     if base:
         bx = sorted(base, key=lambda x: pos[x])
         bxi = [pos[x] for x in bx]
         for seg in _runs(bxi):
-            ax.plot([bxi[i] for i in seg], [base[bx[i]] for i in seg], ls=":", lw=2.4,
-                    color=MAXLINE, zorder=2, marker="." if len(seg) == 1 else None)
-        ax.plot([], [], ls=":", lw=2.4, color=MAXLINE, label="Max of single-system methods")
+            ax.plot(
+                [bxi[i] for i in seg],
+                [base[bx[i]] for i in seg],
+                ls=":",
+                lw=2.4,
+                color=MAXLINE,
+                zorder=2,
+                marker="." if len(seg) == 1 else None,
+            )
+        ax.plot(
+            [], [], ls=":", lw=2.4, color=MAXLINE, label="Max of single-system methods"
+        )
         agile = {x: y for x, y, _, _ in series.get("agile", [])}
         for x in bx:
             if x in agile:
                 gap = agile[x] - base[x]
                 i = pos[x]
-                ax.annotate("", xy=(i, agile[x]), xytext=(i, base[x]),
-                            arrowprops=dict(arrowstyle="->", lw=1.2, color="black"))
-                ax.text(i + 0.05, (agile[x] + base[x]) / 2, f"{gap * 100:+.1f}%",
-                        fontsize=9.5, va="center", ha="left",
-                        bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.8))
+                ax.annotate(
+                    "",
+                    xy=(i, agile[x]),
+                    xytext=(i, base[x]),
+                    arrowprops=dict(arrowstyle="->", lw=1.2, color="black"),
+                )
+                ax.text(
+                    i + 0.05,
+                    (agile[x] + base[x]) / 2,
+                    f"{gap * 100:+.1f}%",
+                    fontsize=9.5,
+                    va="center",
+                    ha="left",
+                    bbox=dict(
+                        boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.8
+                    ),
+                )
 
     ax.set_xticks(range(len(all_x)))
-    ax.set_xticklabels([LOAD_NAME.get(x, x) if key == "load"
-                        else (f"{x // 1024}K" if x >= 1024 else str(x))
-                        for x in all_x])
+    ax.set_xticklabels(
+        [
+            LOAD_NAME.get(x, x)
+            if key == "load"
+            else (f"{x // 1024}K" if x >= 1024 else str(x))
+            for x in all_x
+        ]
+    )
     ax.set_xlim(-0.35, max(len(all_x) - 0.65, 0.35))
     ax.set_xlabel(xlabel)
     ax.set_ylabel("SCORE")
@@ -327,24 +463,50 @@ def _plot(ax, series, key, xlabel, reactive_flat=False):
     top = max((p[1] + p[2]) for pts in series.values() for p in pts) if series else 1.0
     if top < 0.25:
         ax.set_ylim(-0.005, top * 1.35)
-        ax.text(0.99, 0.97, "y-axis rescaled (paper uses 0-1)", transform=ax.transAxes,
-                ha="right", va="top", fontsize=8, color="#C0392B")
+        ax.text(
+            0.99,
+            0.97,
+            "y-axis rescaled (paper uses 0-1)",
+            transform=ax.transAxes,
+            ha="right",
+            va="top",
+            fontsize=8,
+            color="#C0392B",
+        )
     else:
         ax.set_ylim(-0.02, 1.05)
+    return bridged
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--logs_root", default="logs")
     ap.add_argument("--out", default="analysis/figures")
-    ap.add_argument("--at-pressure", dest="at_pressure", type=int, default=None,
-                    help="pressure to hold fixed for the cognitive-load panel")
-    ap.add_argument("--at-load", dest="at_load", default=None,
-                    help="load (E/M/H) to hold fixed for the time-pressure panel")
-    ap.add_argument("--no-reactive-flat", dest="no_reactive_flat", action="store_true",
-                    help="do not extend a single reactive cell across all pressures")
-    ap.add_argument("--default-model", dest="default_model", default="qwen3-8b",
-                    help="model tag for runs that have no model.txt (the first Qwen batch)")
+    ap.add_argument(
+        "--at-pressure",
+        dest="at_pressure",
+        type=int,
+        default=None,
+        help="pressure to hold fixed for the cognitive-load panel",
+    )
+    ap.add_argument(
+        "--at-load",
+        dest="at_load",
+        default=None,
+        help="load (E/M/H) to hold fixed for the time-pressure panel",
+    )
+    ap.add_argument(
+        "--no-reactive-flat",
+        dest="no_reactive_flat",
+        action="store_true",
+        help="do not extend a single reactive cell across all pressures",
+    )
+    ap.add_argument(
+        "--default-model",
+        dest="default_model",
+        default="qwen3-8b",
+        help="model tag for runs that have no model.txt (the first Qwen batch)",
+    )
     a = ap.parse_args()
 
     rows = load_runs(a.logs_root, a.default_model)
@@ -355,13 +517,17 @@ def main():
     # group by (model, game): scores use per-game Rmin/Rmax, so mixing games in
     # one figure would average incomparable numbers
     groups = sorted({(r["model"], r["game"]) for r in rows})
-    lines = ["model,game,mode,load,time_pressure,n,reward_mean,reward_std,score_mean,score_std"]
+    lines = [
+        "model,game,mode,load,time_pressure,n,reward_mean,reward_std,score_mean,score_std"
+    ]
     for model, game in groups:
         mrows = [r for r in rows if r["model"] == model and r["game"] == game]
 
         # ---- summary table ----
         print(f"\n=== {model} · {game} ===")
-        print(f"{'mode':<10} {'load':<6} {'pressure':>9} {'n':>3} {'reward':>16} {'score':>16}")
+        print(
+            f"{'mode':<10} {'load':<6} {'pressure':>9} {'n':>3} {'reward':>16} {'score':>16}"
+        )
         print("-" * 68)
         buckets = {}
         for r in mrows:
@@ -369,10 +535,14 @@ def main():
         for (mode, load, pressure), rs in sorted(buckets.items()):
             rw = np.array([x["reward"] for x in rs])
             sc = np.array([x["score"] for x in rs])
-            print(f"{mode:<10} {load:<6} {pressure:>9} {len(rs):>3} "
-                  f"{rw.mean():>8.2f} ± {rw.std():<5.2f} {sc.mean():>8.3f} ± {sc.std():<5.3f}")
-            lines.append(f"{model},{game},{mode},{load},{pressure},{len(rs)},"
-                         f"{rw.mean():.4f},{rw.std():.4f},{sc.mean():.4f},{sc.std():.4f}")
+            print(
+                f"{mode:<10} {load:<6} {pressure:>9} {len(rs):>3} "
+                f"{rw.mean():>8.2f} ± {rw.std():<5.2f} {sc.mean():>8.3f} ± {sc.std():<5.3f}"
+            )
+            lines.append(
+                f"{model},{game},{mode},{load},{pressure},{len(rs)},"
+                f"{rw.mean():.4f},{rw.std():.4f},{sc.mean():.4f},{sc.std():.4f}"
+            )
 
         # ---- figure: hold one axis fixed while sweeping the other ----
         fix_press = a.at_pressure or pick_slice(mrows, "load", "pressure")
@@ -383,29 +553,58 @@ def main():
         n_press = max([len(v) for v in by_press.values()] or [0])
 
         fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
-        _plot(axes[0], by_load, "load", "COGNITIVE LOAD (LOW → HIGH)")
-        _plot(axes[1], by_press, "pressure", "TIME PRESSURE (LOW → HIGH)",
-              reactive_flat=not a.no_reactive_flat)
+        bridged = _plot(axes[0], by_load, "load", "COGNITIVE LOAD (LOW → HIGH)")
+        bridged |= _plot(
+            axes[1],
+            by_press,
+            "pressure",
+            "TIME PRESSURE (LOW → HIGH)",
+            reactive_flat=not a.no_reactive_flat,
+        )
         fig.suptitle(f"{game.capitalize()} — {model}", fontsize=13, y=1.02)
-        axes[0].set_title(f"score vs cognitive load (time pressure fixed at {fix_press})", fontsize=10.5)
-        axes[1].set_title(f"score vs time pressure (load fixed at {LOAD_NAME.get(fix_load, fix_load)})",
-                          fontsize=10.5)
-        if any(getattr(ax, "_bridged", False) for ax in axes):
-            fig.text(0.5, -0.02, "Faded dashed segments join measured points across cells that have not been run.",
-                     ha="center", fontsize=8.5, color="#666666")
+        axes[0].set_title(
+            f"score vs cognitive load (time pressure fixed at {fix_press})",
+            fontsize=10.5,
+        )
+        axes[1].set_title(
+            f"score vs time pressure (load fixed at {LOAD_NAME.get(fix_load, fix_load)})",
+            fontsize=10.5,
+        )
+        if bridged:
+            fig.text(
+                0.5,
+                -0.02,
+                "Faded dashed segments join measured points across cells that have not been run.",
+                ha="center",
+                fontsize=8.5,
+                color="#666666",
+            )
         if n_load < 2 or n_press < 2:
-            fig.text(0.5, 0.005,
-                     f"NOTE: {n_load} load point(s), {n_press} pressure point(s). "
-                     "A trend needs >=2 per axis — run more cells.",
-                     ha="center", fontsize=9, color="#B00020")
+            fig.text(
+                0.5,
+                0.005,
+                f"NOTE: {n_load} load point(s), {n_press} pressure point(s). "
+                "A trend needs >=2 per axis — run more cells.",
+                ha="center",
+                fontsize=9,
+                color="#B00020",
+            )
         handles = {}
         for ax in axes:
             for h, l in zip(*ax.get_legend_handles_labels()):
                 handles.setdefault(l, h)
         order = ["AgileThinker", "Max of single-system methods"]
-        keys = [k for k in order if k in handles] + sorted(k for k in handles if k not in order)
-        fig.legend([handles[k] for k in keys], keys, loc="lower center",
-                   ncol=min(len(keys), 4), frameon=False, bbox_to_anchor=(0.5, -0.10))
+        keys = [k for k in order if k in handles] + sorted(
+            k for k in handles if k not in order
+        )
+        fig.legend(
+            [handles[k] for k in keys],
+            keys,
+            loc="lower center",
+            ncol=min(len(keys), 4),
+            frameon=False,
+            bbox_to_anchor=(0.5, -0.10),
+        )
         fig.tight_layout()
         slug = re.sub(r"[^A-Za-z0-9._-]+", "_", f"{model}_{game}")
         path = os.path.join(a.out, f"score_curves_{slug}.png")

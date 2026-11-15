@@ -19,6 +19,7 @@ Usage:
 
 Open the resulting .html in a browser.
 """
+
 import argparse
 import base64
 import glob
@@ -28,6 +29,7 @@ import math
 import os
 import re
 import sys
+from typing import Any
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
@@ -41,13 +43,23 @@ import realtimegym  # noqa: E402
 
 LOAD_VERSION = {"E": 0, "M": 1, "H": 2}
 PLAN_T1 = re.compile(r"t_1\s*=\s*(\d+)")
-ASSETS = os.path.join(REPO, "src", "realtimegym", "environments", "render", "assets", "freeway")
-SPRITES = {"chicken": "chicken.png", "car_1": "car1.png", "car_2": "car2.png",
-           "car_3": "car3.png", "car_4": "car4.png", "grey": "grey.png",
-           "yellow": "yellow.png", "grass": "grass.png", "target": "map-pin.png"}
+ASSETS = os.path.join(
+    REPO, "src", "realtimegym", "environments", "render", "assets", "freeway"
+)
+SPRITES = {
+    "chicken": "chicken.png",
+    "car_1": "car1.png",
+    "car_2": "car2.png",
+    "car_3": "car3.png",
+    "car_4": "car4.png",
+    "grey": "grey.png",
+    "yellow": "yellow.png",
+    "grass": "grass.png",
+    "target": "map-pin.png",
+}
 
 
-def read_args_log(run_dir):
+def read_args_log(run_dir: str) -> dict[str, str]:
     cfg = {}
     with open(os.path.join(run_dir, "args.log")) as f:
         for line in f:
@@ -59,30 +71,40 @@ def read_args_log(run_dir):
     return cfg
 
 
-def text(v):
+def text(v: object) -> str:
     return "" if v is None or (isinstance(v, float) and math.isnan(v)) else str(v)
 
 
-def norm_board(s):
+def norm_board(s: object) -> str:
     return "\n".join(line.rstrip() for line in str(s).strip("\n").splitlines())
 
 
-def snapshot(env):
+def snapshot(env: Any) -> dict[str, Any]:  # noqa: ANN401 - a realtimegym env
     """Everything FreewayRender.render() reads: cars, chicken row, turn, terminal."""
-    cars = [[c[0], c[1], c[3], c[4]] for c in env.cars
-            if c[0] is not None and c[3] is not None]
-    return {"pos": env.pos, "turn": env.game_turn, "end": bool(env.terminal), "cars": cars}
+    cars = [
+        [c[0], c[1], c[3], c[4]]
+        for c in env.cars
+        if c[0] is not None and c[3] is not None
+    ]
+    return {
+        "pos": env.pos,
+        "turn": env.game_turn,
+        "end": bool(env.terminal),
+        "cars": cars,
+    }
 
 
-def replay_seed(csv_path, load):
+def replay_seed(csv_path: str, load: str) -> dict[str, Any]:
     seed_idx = int(os.path.basename(csv_path).split("_")[1].split(".")[0])
     df = pd.read_csv(csv_path)
-    env, real_seed, _ = realtimegym.make(f"Freeway-v{LOAD_VERSION[load]}", seed=seed_idx)
+    env, real_seed, _ = realtimegym.make(
+        f"Freeway-v{LOAD_VERSION[load]}", seed=seed_idx
+    )
     obs, done = env.reset()
 
-    plans, plan_index = [], {}   # dedupe growing plan prefixes per grounding turn
+    plans, plan_index = [], {}  # dedupe growing plan prefixes per grounding turn
     steps, boards, mismatch = [], [], None
-    gen_t1 = None                # planning mode: turn the current generation started
+    gen_t1 = None  # planning mode: turn the current generation started
     for i, row in df.iterrows():
         logged = norm_board(row.get("render", ""))
         if mismatch is None and logged and norm_board(obs["state_string"]) != logged:
@@ -108,7 +130,9 @@ def replay_seed(csv_path, load):
             body = plan.split("\n", 1)[1] if "\n" in plan else plan
             key = t1 if t1 is not None else f"x{i}"
             j = plan_index.get(key)
-            if j is not None and (body.startswith(plans[j]) or plans[j].startswith(body)):
+            if j is not None and (
+                body.startswith(plans[j]) or plans[j].startswith(body)
+            ):
                 if len(body) > len(plans[j]):
                     plans[j] = body
             else:
@@ -120,21 +144,33 @@ def replay_seed(csv_path, load):
         action = text(row.get("action")) or "S"
         turn = env.game_turn
         obs, done, reward, collided = env.step(action)
-        steps.append({
-            "turn": turn, "action": action, "reward": int(reward), "collided": bool(collided),
-            "plan": plan_id, "planLen": plan_len, "t1": t1, "queue": queue,
-            "reactive": text(row.get("model1_response")),
-            "tok1": text(row.get("model1_token_num")),
-        })
+        steps.append(
+            {
+                "turn": turn,
+                "action": action,
+                "reward": int(reward),
+                "collided": bool(collided),
+                "plan": plan_id,
+                "planLen": plan_len,
+                "t1": t1,
+                "queue": queue,
+                "reactive": text(row.get("model1_response")),
+                "tok1": text(row.get("model1_token_num")),
+            }
+        )
         if done:
             break
-    boards.append(snapshot(env))   # final board
+    boards.append(snapshot(env))  # final board
     return {
-        "seedIdx": seed_idx, "envSeed": int(real_seed),
-        "steps": steps, "boards": boards, "plans": plans,
+        "seedIdx": seed_idx,
+        "envSeed": int(real_seed),
+        "steps": steps,
+        "boards": boards,
+        "plans": plans,
         "finalReward": int(env.reward),
         "success": bool(env.terminal and env.game_turn < 100),
-        "turns": env.game_turn, "mismatch": mismatch,
+        "turns": env.game_turn,
+        "mismatch": mismatch,
     }
 
 
@@ -350,11 +386,17 @@ if (h.has("step")) { i = +h.get("step"); show(); }
 """
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run_dir", required=True, help="directory holding args.log and {r}_{seed}.csv")
-    ap.add_argument("--seeds", type=int, nargs="*", default=None, help="seed indices (default: all)")
-    ap.add_argument("--out", default=None, help="output .html (default: <run_dir>/replay.html)")
+    ap.add_argument(
+        "--run_dir", required=True, help="directory holding args.log and {r}_{seed}.csv"
+    )
+    ap.add_argument(
+        "--seeds", type=int, nargs="*", default=None, help="seed indices (default: all)"
+    )
+    ap.add_argument(
+        "--out", default=None, help="output .html (default: <run_dir>/replay.html)"
+    )
     a = ap.parse_args()
 
     run_dir = os.path.abspath(a.run_dir)
@@ -364,7 +406,11 @@ def main():
     load = cfg.get("cognitive_load", "M")
     csvs = sorted(glob.glob(os.path.join(run_dir, "*_*.csv")))
     if a.seeds is not None:
-        csvs = [c for c in csvs if int(os.path.basename(c).split("_")[1].split(".")[0]) in a.seeds]
+        csvs = [
+            c
+            for c in csvs
+            if int(os.path.basename(c).split("_")[1].split(".")[0]) in a.seeds
+        ]
     if not csvs:
         raise SystemExit(f"No per-seed CSVs found in {run_dir}")
 
@@ -372,7 +418,9 @@ def main():
     for c in csvs:
         r = replay_seed(c, load)
         flag = "OK" if r["mismatch"] is None else f"DIVERGED at step {r['mismatch']}"
-        print(f"  seed {r['seedIdx']}: {len(r['steps'])} steps, reward {r['finalReward']}, replay {flag}")
+        print(
+            f"  seed {r['seedIdx']}: {len(r['steps'])} steps, reward {r['finalReward']}, replay {flag}"
+        )
         runs.append(r)
 
     sprites = {}
@@ -382,12 +430,16 @@ def main():
 
     mode = cfg.get("mode", "?")
     title = f"Freeway replay — {mode}, load {load}, {cfg.get('time_pressure', '?')} tokens/step"
-    subtitle = (f"internal budget {cfg.get('internal_budget', '?')} · {len(runs)} seed(s) · "
-                f"{os.path.basename(run_dir)}")
-    page = (PAGE.replace("__TITLE__", html.escape(title))
-                .replace("__SUBTITLE__", html.escape(subtitle))
-                .replace("__SPRITES__", json.dumps(sprites))
-                .replace("__DATA__", json.dumps(runs).replace("</", "<\\/")))
+    subtitle = (
+        f"internal budget {cfg.get('internal_budget', '?')} · {len(runs)} seed(s) · "
+        f"{os.path.basename(run_dir)}"
+    )
+    page = (
+        PAGE.replace("__TITLE__", html.escape(title))
+        .replace("__SUBTITLE__", html.escape(subtitle))
+        .replace("__SPRITES__", json.dumps(sprites))
+        .replace("__DATA__", json.dumps(runs).replace("</", "<\\/"))
+    )
     out = a.out or os.path.join(run_dir, "replay.html")
     with open(out, "w") as f:
         f.write(page)

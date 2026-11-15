@@ -15,30 +15,46 @@ anything:
 Usage:
   python analysis/plot_refresh.py --logs_root rtg_results/logs --out rtg_figures
 """
+
 import argparse
 import glob
 import os
 import re
+from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-R_LO, R_HI = 0, 89          # Freeway, paper Table 4
-ARM_COLOR = {"vanilla": "#555555", "every2": "#009E73", "every3": "#0072B2",
-             "every2+carry": "#E69F00", "every3+carry": "#CC79A7"}
+R_LO, R_HI = 0, 89  # Freeway, paper Table 4
+ARM_COLOR = {
+    "vanilla": "#555555",
+    "every2": "#009E73",
+    "every3": "#0072B2",
+    "every2+carry": "#E69F00",
+    "every3+carry": "#CC79A7",
+}
 
-plt.rcParams.update({
-    "figure.dpi": 150, "font.size": 10.5,
-    "axes.edgecolor": "#888888", "axes.linewidth": 0.8,
-    "axes.grid": True, "grid.color": "#DDDDDD", "grid.linewidth": 0.8,
-    "axes.axisbelow": True, "axes.spines.top": False, "axes.spines.right": False,
-})
+plt.rcParams.update(
+    {
+        "figure.dpi": 150,
+        "font.size": 10.5,
+        "axes.edgecolor": "#888888",
+        "axes.linewidth": 0.8,
+        "axes.grid": True,
+        "grid.color": "#DDDDDD",
+        "grid.linewidth": 0.8,
+        "axes.axisbelow": True,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+    }
+)
 
 
-def arm_name(cfg):
+def arm_name(cfg: dict[str, str]) -> str:
     if str(cfg.get("refresh_plan", "False")).lower() != "true":
         return "vanilla"
     k = int(float(cfg.get("refresh_every", 0) or 0))
@@ -48,8 +64,9 @@ def arm_name(cfg):
     return name
 
 
-def model_tag(args_log, logs_root, default="qwen3-8b"):
-    d = os.path.dirname(os.path.abspath(args_log)); stop = os.path.abspath(logs_root)
+def model_tag(args_log: str, logs_root: str, default: str = "qwen3-8b") -> str:
+    d = os.path.dirname(os.path.abspath(args_log))
+    stop = os.path.abspath(logs_root)
     while True:
         f = os.path.join(d, "model.txt")
         if os.path.exists(f):
@@ -61,9 +78,17 @@ def model_tag(args_log, logs_root, default="qwen3-8b"):
         d = os.path.dirname(d)
 
 
-def load(logs_root, game="freeway", load_level="M", model="qwen3-8b", partial=False):
+def load(
+    logs_root: str,
+    game: str = "freeway",
+    load_level: str = "M",
+    model: str = "qwen3-8b",
+    partial: bool = False,
+) -> list[dict[str, Any]]:
     cells = []
-    for args_log in sorted(glob.glob(os.path.join(logs_root, "**", "args.log"), recursive=True)):
+    for args_log in sorted(
+        glob.glob(os.path.join(logs_root, "**", "args.log"), recursive=True)
+    ):
         cfg, rew, per_seed = {}, [], {}
         for line in open(args_log):
             if line.startswith("seed:"):
@@ -76,7 +101,11 @@ def load(logs_root, game="freeway", load_level="M", model="qwen3-8b", partial=Fa
                 cfg[k.strip()] = v.strip()
         # a partial run may have no finished seed yet; its per-step staleness is
         # still valid, so only complete cells need rewards
-        if (not rew and not partial) or cfg.get("game") != game or cfg.get("mode") != "agile":
+        if (
+            (not rew and not partial)
+            or cfg.get("game") != game
+            or cfg.get("mode") != "agile"
+        ):
             continue
         if cfg.get("cognitive_load") != load_level:
             continue
@@ -94,14 +123,22 @@ def load(logs_root, game="freeway", load_level="M", model="qwen3-8b", partial=Fa
             if "model2_token_num" in df:
                 tok2 += float(df["model2_token_num"].fillna(0).sum())
         r = np.array(rew) if rew else np.array([0.0])
-        cells.append(dict(
-            arm=arm_name(cfg), pressure=int(float(cfg["time_pressure"])),
-            n=len(r), score=float(((r - R_LO) / (R_HI - R_LO)).mean()),
-            sem=float(((r - R_LO) / (R_HI - R_LO)).std() / max(np.sqrt(len(r)), 1)),
-            crossed=int((r > 0).sum()), ages=ages, per_seed=per_seed,
-            refresh_pct=100 * refreshed / max(steps, 1),
-            tok_step=tok2 / max(steps, 1), has_age=bool(ages), partial=partial,
-        ))
+        cells.append(
+            dict(
+                arm=arm_name(cfg),
+                pressure=int(float(cfg["time_pressure"])),
+                n=len(r),
+                score=float(((r - R_LO) / (R_HI - R_LO)).mean()),
+                sem=float(((r - R_LO) / (R_HI - R_LO)).std() / max(np.sqrt(len(r)), 1)),
+                crossed=int((r > 0).sum()),
+                ages=ages,
+                per_seed=per_seed,
+                refresh_pct=100 * refreshed / max(steps, 1),
+                tok_step=tok2 / max(steps, 1),
+                has_age=bool(ages),
+                partial=partial,
+            )
+        )
     # pool cells that are the same arm at the same pressure
     merged = {}
     for c in cells:
@@ -110,10 +147,14 @@ def load(logs_root, game="freeway", load_level="M", model="qwen3-8b", partial=Fa
             m = merged[k]
             tot = m["n"] + c["n"]
             m["score"] = (m["score"] * m["n"] + c["score"] * c["n"]) / tot
-            m["crossed"] += c["crossed"]; m["ages"] += c["ages"]
-            for k, v in c["per_seed"].items(): m["per_seed"].setdefault(k, []).extend(v)
+            m["crossed"] += c["crossed"]
+            m["ages"] += c["ages"]
+            for k, v in c["per_seed"].items():
+                m["per_seed"].setdefault(k, []).extend(v)
             m["tok_step"] = (m["tok_step"] * m["n"] + c["tok_step"] * c["n"]) / tot
-            m["refresh_pct"] = (m["refresh_pct"] * m["n"] + c["refresh_pct"] * c["n"]) / tot
+            m["refresh_pct"] = (
+                m["refresh_pct"] * m["n"] + c["refresh_pct"] * c["n"]
+            ) / tot
             m["sem"] = max(m["sem"], c["sem"]) * np.sqrt(m["n"] / tot)
             m["n"] = tot
         else:
@@ -135,14 +176,17 @@ def load(logs_root, game="freeway", load_level="M", model="qwen3-8b", partial=Fa
     return list(merged.values())
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--logs_root", default="rtg_results/logs")
     ap.add_argument("--out", default="rtg_figures")
     ap.add_argument("--load", default="M")
     ap.add_argument("--model", default="qwen3-8b")
-    ap.add_argument("--partial_root", default="rtg_partial/logs",
-                    help="checkpoints of killed runs; used for the staleness panel only")
+    ap.add_argument(
+        "--partial_root",
+        default="rtg_partial/logs",
+        help="checkpoints of killed runs; used for the staleness panel only",
+    )
     a = ap.parse_args()
 
     cells = load(a.logs_root, load_level=a.load, model=a.model)
@@ -160,7 +204,9 @@ def main():
     os.makedirs(a.out, exist_ok=True)
 
     pressures = sorted({c["pressure"] for c in cells if not c["partial"]}, reverse=True)
-    arms = sorted({c["arm"] for c in cells if not c["partial"]}, key=lambda s: (s != "vanilla", s))
+    arms = sorted(
+        {c["arm"] for c in cells if not c["partial"]}, key=lambda s: (s != "vanilla", s)
+    )
 
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.4))
 
@@ -170,64 +216,143 @@ def main():
     for i, arm in enumerate(arms):
         xs, ys, es, lbl = [], [], [], []
         for j, p in enumerate(pressures):
-            c = next((c for c in cells if c["arm"] == arm and c["pressure"] == p and not c["partial"]), None)
+            c = next(
+                (
+                    c
+                    for c in cells
+                    if c["arm"] == arm and c["pressure"] == p and not c["partial"]
+                ),
+                None,
+            )
             if not c:
                 continue
-            xs.append(j + i * w - 0.4 + w / 2); ys.append(c["score"]); es.append(c["sem"])
+            xs.append(j + i * w - 0.4 + w / 2)
+            ys.append(c["score"])
+            es.append(c["sem"])
             lbl.append(f"{c['crossed']}/{c['n']}")
         if not xs:
             continue
-        b = ax.bar(xs, ys, width=w * 0.92, yerr=es, capsize=3,
-                   color=ARM_COLOR.get(arm, "#999999"), label=arm, edgecolor="white")
+        b = ax.bar(
+            xs,
+            ys,
+            width=w * 0.92,
+            yerr=es,
+            capsize=3,
+            color=ARM_COLOR.get(arm, "#999999"),
+            label=arm,
+            edgecolor="white",
+        )
         for rect, t in zip(b, lbl):
-            ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height() + (es[0] or 0) + 0.02,
-                    t, ha="center", fontsize=7.5, color="#444444")
+            ax.text(
+                rect.get_x() + rect.get_width() / 2,
+                rect.get_height() + (es[0] or 0) + 0.02,
+                t,
+                ha="center",
+                fontsize=7.5,
+                color="#444444",
+            )
     ax.set_xticks(range(len(pressures)))
-    ax.set_xticklabels([f"{p//1024}K" for p in pressures])
+    ax.set_xticklabels([f"{p // 1024}K" for p in pressures])
     ax.set_xlabel("TIME PRESSURE (tokens/step)")
     ax.set_ylabel("SCORE")
-    ax.set_title(f"Freeway, load {a.load}: score by arm\n(label = seeds that crossed)", fontsize=10.5)
+    ax.set_title(
+        f"Freeway, load {a.load}: score by arm\n(label = seeds that crossed)",
+        fontsize=10.5,
+    )
     ax.legend(frameon=False, fontsize=9)
 
     # --- 2. how stale was the advice ---------------------------------------
     ax = axes[1]
     # Only the tightest pressure is interesting here: at 8K plans already finish
     # inside ~2 steps, so every arm is 0% stale and the bars say nothing.
-    age_p = min(c["pressure"] for c in cells if c["has_age"]) if any(c["has_age"] for c in cells) else None
+    age_p = (
+        min(c["pressure"] for c in cells if c["has_age"])
+        if any(c["has_age"] for c in cells)
+        else None
+    )
     withage = [c for c in cells if c["has_age"] and c["pressure"] == age_p]
     if withage:
         labels, fr0, fr1, fr2 = [], [], [], []
         for c in sorted(withage, key=lambda c: (-c["pressure"], c["arm"])):
             v = np.array(c["ages"])
-            labels.append(c['arm'] + ('\n(partial)' if c['partial'] else ''))
-            fr0.append(100 * (v == 0).mean()); fr1.append(100 * (v == 1).mean())
+            labels.append(c["arm"] + ("\n(partial)" if c["partial"] else ""))
+            fr0.append(100 * (v == 0).mean())
+            fr1.append(100 * (v == 1).mean())
             fr2.append(100 * (v >= 2).mean())
         x = np.arange(len(labels))
         ax.bar(x, fr0, 0.6, label="fresh (age 0)", color="#009E73")
         ax.bar(x, fr1, 0.6, bottom=fr0, label="1 step stale", color="#9BD6C2")
-        ax.bar(x, fr2, 0.6, bottom=np.array(fr0) + np.array(fr1),
-               label="2+ steps stale", color="#C0392B")
-        for i, c in enumerate(sorted(withage, key=lambda c: (-c["pressure"], c["arm"]))):
-            ax.text(i, 102, f"{c['refresh_pct']:.0f}% refreshed", ha="center", fontsize=8.5, color="#444444")
-        ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=9)
-        ax.set_ylabel("% of decisions"); ax.set_ylim(0, 112)
+        ax.bar(
+            x,
+            fr2,
+            0.6,
+            bottom=np.array(fr0) + np.array(fr1),
+            label="2+ steps stale",
+            color="#C0392B",
+        )
+        for i, c in enumerate(
+            sorted(withage, key=lambda c: (-c["pressure"], c["arm"]))
+        ):
+            ax.text(
+                i,
+                102,
+                f"{c['refresh_pct']:.0f}% refreshed",
+                ha="center",
+                fontsize=8.5,
+                color="#444444",
+            )
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, fontsize=9)
+        ax.set_ylabel("% of decisions")
+        ax.set_ylim(0, 112)
         ax.legend(frameon=False, fontsize=8, loc="lower right")
-        ax.text(0.5, -0.22, "(partial) = checkpoint of a run killed at its time cap; per-step staleness is\nunaffected, but its score would be biased, so it is not plotted on the left",
-                transform=ax.transAxes, ha="center", fontsize=7.5, color="#888888")
+        ax.text(
+            0.5,
+            -0.22,
+            "(partial) = checkpoint of a run killed at its time cap; per-step staleness is\nunaffected, but its score would be biased, so it is not plotted on the left",
+            transform=ax.transAxes,
+            ha="center",
+            fontsize=7.5,
+            color="#888888",
+        )
     else:
-        ax.text(0.5, 0.5, "no plan_age logged yet", ha="center", va="center",
-                transform=ax.transAxes, color="#888888")
-    ax.set_title(f"Staleness of the advice acted on\n(at {age_p//1024}K tokens/step)" if age_p else "Staleness", fontsize=10.5)
+        ax.text(
+            0.5,
+            0.5,
+            "no plan_age logged yet",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            color="#888888",
+        )
+    ax.set_title(
+        f"Staleness of the advice acted on\n(at {age_p // 1024}K tokens/step)"
+        if age_p
+        else "Staleness",
+        fontsize=10.5,
+    )
     ax.grid(axis="x", visible=False)
 
     # --- 3. cost vs benefit ------------------------------------------------
     ax = axes[2]
     for c in [c for c in cells if not c["partial"]]:
-        ax.errorbar(c["tok_step"], c["score"], yerr=c["sem"], marker="o", markersize=9,
-                    color=ARM_COLOR.get(c["arm"], "#999999"), capsize=3)
-        ax.annotate(f"{c['arm']}\n{c['pressure']//1024}K", (c["tok_step"], c["score"]),
-                    textcoords="offset points", xytext=(10, 6 if c["arm"] == "vanilla" else -14),
-                    fontsize=8, color="#444444")
+        ax.errorbar(
+            c["tok_step"],
+            c["score"],
+            yerr=c["sem"],
+            marker="o",
+            markersize=9,
+            color=ARM_COLOR.get(c["arm"], "#999999"),
+            capsize=3,
+        )
+        ax.annotate(
+            f"{c['arm']}\n{c['pressure'] // 1024}K",
+            (c["tok_step"], c["score"]),
+            textcoords="offset points",
+            xytext=(10, 6 if c["arm"] == "vanilla" else -14),
+            fontsize=8,
+            color="#444444",
+        )
     ax.set_xlabel("planning tokens generated per env step")
     ax.set_ylabel("SCORE")
     ax.set_title("Cost of freshness", fontsize=10.5)
@@ -238,15 +363,21 @@ def main():
     path = os.path.join(a.out, f"gap3_refresh_{a.load}.png")
     fig.savefig(path, bbox_inches="tight")
     print(f"Figure: {path}")
-    print(f"\n{'arm':14s} {'tp':>6} {'n':>4} {'score':>7} {'±sem':>6} {'crossed':>8} {'refresh%':>9} {'tok/step':>9}")
+    print(
+        f"\n{'arm':14s} {'tp':>6} {'n':>4} {'score':>7} {'±sem':>6} {'crossed':>8} {'refresh%':>9} {'tok/step':>9}"
+    )
     for c in sorted(cells, key=lambda c: (c["partial"], -c["pressure"], c["arm"])):
         if c["partial"]:
             v = np.array(c["ages"])
-            print(f"{c['arm']:14s} {c['pressure']:>6} {'':>4} {'(partial: staleness only)':>25} "
-                  f"{c['refresh_pct']:>5.0f}% refreshed, {100*(v>=2).mean():.0f}% of decisions 2+ steps stale")
+            print(
+                f"{c['arm']:14s} {c['pressure']:>6} {'':>4} {'(partial: staleness only)':>25} "
+                f"{c['refresh_pct']:>5.0f}% refreshed, {100 * (v >= 2).mean():.0f}% of decisions 2+ steps stale"
+            )
         else:
-            print(f"{c['arm']:14s} {c['pressure']:>6} {c['n']:>4} {c['score']:>7.3f} {c['sem']:>6.3f} "
-                  f"{c['crossed']:>4}/{c['n']:<3} {c['refresh_pct']:>8.0f}% {c['tok_step']:>9.0f}")
+            print(
+                f"{c['arm']:14s} {c['pressure']:>6} {c['n']:>4} {c['score']:>7.3f} {c['sem']:>6.3f} "
+                f"{c['crossed']:>4}/{c['n']:<3} {c['refresh_pct']:>8.0f}% {c['tok_step']:>9.0f}"
+            )
 
 
 if __name__ == "__main__":

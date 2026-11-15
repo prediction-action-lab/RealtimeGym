@@ -17,23 +17,40 @@ The adapter is saved so vLLM can serve it directly:
 Usage (inside the CHTC job):
   python analysis/train_sft.py --data sft.jsonl --base Qwen/Qwen3-8B --out /staging/.../sft_adapter
 """
+
 import argparse
 import json
 import math
 import os
 import random
+from typing import Any, Optional
 
 import torch
 from torch.utils.data import Dataset
-from transformers import (AutoModelForCausalLM, AutoTokenizer, Trainer,
-                          TrainingArguments, DataCollatorForSeq2Seq)
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+    DataCollatorForSeq2Seq,
+    PreTrainedTokenizerBase,
+)
 from peft import LoraConfig, get_peft_model
 
 
 class Steps(Dataset):
     """One example = one env step. Labels are -100 over the prompt."""
 
-    def __init__(self, path, tok, max_len, balance=None, limit=0, seed=0, thinking=False):
+    def __init__(
+        self,
+        path: str,
+        tok: PreTrainedTokenizerBase,
+        max_len: int,
+        balance: Optional[str] = None,
+        limit: int = 0,
+        seed: int = 0,
+        thinking: bool = False,
+    ) -> None:
         self.thinking = thinking
         rows = [json.loads(l) for l in open(path)]
         if balance:
@@ -47,35 +64,50 @@ class Steps(Dataset):
         # instead -- a short example is useless, a headless one is harmful.
         keep = [r for r in self.rows if len(self._ids(r)[1]) <= max_len]
         if len(keep) != len(self.rows):
-            print(f"  dropped {len(self.rows) - len(keep)} example(s) longer than {max_len} tokens")
+            print(
+                f"  dropped {len(self.rows) - len(keep)} example(s) longer than {max_len} tokens"
+            )
             self.rows = keep
 
-    def _ids(self, row):
+    def _ids(self, row: dict[str, Any]) -> tuple[list[int], list[int]]:
         m = row["messages"]
         # The chat template differs between the two modes, so this must match
         # what the server sends at inference. Train on one and serve the other
         # and the model sees a prompt prefix it never learned.
         prompt = self.tok.apply_chat_template(
-            [m[0]], tokenize=False, add_generation_prompt=True,
-            **({"enable_thinking": self.thinking} if "qwen3" in self.tok.name_or_path.lower() else {}))
+            [m[0]],
+            tokenize=False,
+            add_generation_prompt=True,
+            **(
+                {"enable_thinking": self.thinking}
+                if "qwen3" in self.tok.name_or_path.lower()
+                else {}
+            ),
+        )
         full = prompt + m[1]["content"] + (self.tok.eos_token or "")
-        return (self.tok(prompt, add_special_tokens=False)["input_ids"],
-                self.tok(full, add_special_tokens=False)["input_ids"])
+        return (
+            self.tok(prompt, add_special_tokens=False)["input_ids"],
+            self.tok(full, add_special_tokens=False)["input_ids"],
+        )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.rows)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int) -> dict[str, list[int]]:
         # prompt exactly as served at eval time, then the target turn
         p_ids, f_ids = self._ids(self.rows[i])
         f_ids = f_ids[: self.max_len]
         labels = list(f_ids)
         for j in range(min(len(p_ids), len(labels))):
             labels[j] = -100
-        return {"input_ids": f_ids, "attention_mask": [1] * len(f_ids), "labels": labels}
+        return {
+            "input_ids": f_ids,
+            "attention_mask": [1] * len(f_ids),
+            "labels": labels,
+        }
 
 
-def rebalance(rows, mode, seed):
+def rebalance(rows: list[dict[str, Any]], mode: str, seed: int) -> list[dict[str, Any]]:
     """The traces drive forward: ~79% U / 16% S / 4% D on Freeway. Training on that
     as-is teaches 'always press U', which is already the reactive agent's failure
     mode. 'cap' downsamples the majority action to 2x the runner-up."""
@@ -90,24 +122,32 @@ def rebalance(rows, mode, seed):
         out = []
         for k, v in by.items():
             out += v if len(v) <= keep else rng.sample(v, keep)
-        print(f"  rebalanced {counts} -> { {k: min(len(v), keep) for k, v in by.items()} }")
+        print(
+            f"  rebalanced {counts} -> { {k: min(len(v), keep) for k, v in by.items()} }"
+        )
         return out
     return rows
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--base", default="Qwen/Qwen3-8B")
-    ap.add_argument("--thinking", action="store_true",
-                    help="build prompts with Qwen3 thinking ENABLED. Pair with "
-                         "--think-tags in build_sft.py and enable_thinking: true "
-                         "in the serving config.")
-    ap.add_argument("--init-adapter", default=None,
-                    help="continue training THIS adapter instead of starting a fresh "
-                         "one. Without it, rejection sampling trains a new adapter "
-                         "from the base model, so the result is a separate small "
-                         "training run -- not an improvement on the policy it sampled.")
+    ap.add_argument(
+        "--thinking",
+        action="store_true",
+        help="build prompts with Qwen3 thinking ENABLED. Pair with "
+        "--think-tags in build_sft.py and enable_thinking: true "
+        "in the serving config.",
+    )
+    ap.add_argument(
+        "--init-adapter",
+        default=None,
+        help="continue training THIS adapter instead of starting a fresh "
+        "one. Without it, rejection sampling trains a new adapter "
+        "from the base model, so the result is a separate small "
+        "training run -- not an improvement on the policy it sampled.",
+    )
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-len", type=int, default=8192)
     ap.add_argument("--epochs", type=float, default=2.0)
@@ -124,15 +164,23 @@ def main():
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
 
-    ds = Steps(a.data, tok, a.max_len, None if a.balance == "none" else a.balance,
-               a.limit, thinking=a.thinking)
+    ds = Steps(
+        a.data,
+        tok,
+        a.max_len,
+        None if a.balance == "none" else a.balance,
+        a.limit,
+        thinking=a.thinking,
+    )
     n_val = max(1, int(len(ds) * a.val_frac))
     idx = list(range(len(ds)))
     random.Random(0).shuffle(idx)
     val = torch.utils.data.Subset(ds, idx[:n_val])
     train = torch.utils.data.Subset(ds, idx[n_val:])
-    print(f"examples: {len(train)} train / {len(val)} val, max_len {a.max_len}, "
-          f"thinking={'on' if a.thinking else 'off'}")
+    print(
+        f"examples: {len(train)} train / {len(val)} val, max_len {a.max_len}, "
+        f"thinking={'on' if a.thinking else 'off'}"
+    )
 
     # Prove the masking: only the assistant turn should survive. A silent
     # off-by-one here trains on the game rules and looks like a normal loss curve.
@@ -142,41 +190,78 @@ def main():
     print("  " + repr(tok.decode(kept)[:300]))
 
     model = AutoModelForCausalLM.from_pretrained(
-        a.base, torch_dtype=torch.bfloat16, trust_remote_code=True, device_map=None)
+        a.base, torch_dtype=torch.bfloat16, trust_remote_code=True, device_map=None
+    )
     model.config.use_cache = False
     model.gradient_checkpointing_enable()
     model.enable_input_require_grads()
     if a.init_adapter:
         from peft import PeftModel
+
         model = PeftModel.from_pretrained(model, a.init_adapter, is_trainable=True)
         print(f"continuing from adapter {a.init_adapter}")
     else:
-        model = get_peft_model(model, LoraConfig(
-            r=a.rank, lora_alpha=a.rank * 2, lora_dropout=0.05, task_type="CAUSAL_LM",
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                            "gate_proj", "up_proj", "down_proj"]))
+        model = get_peft_model(
+            model,
+            LoraConfig(
+                r=a.rank,
+                lora_alpha=a.rank * 2,
+                lora_dropout=0.05,
+                task_type="CAUSAL_LM",
+                target_modules=[
+                    "q_proj",
+                    "k_proj",
+                    "v_proj",
+                    "o_proj",
+                    "gate_proj",
+                    "up_proj",
+                    "down_proj",
+                ],
+            ),
+        )
     model.print_trainable_parameters()
 
     args = TrainingArguments(
-        output_dir=a.out, per_device_train_batch_size=a.batch,
-        gradient_accumulation_steps=a.accum, num_train_epochs=a.epochs,
-        learning_rate=a.lr, lr_scheduler_type="cosine", warmup_ratio=0.03,
+        output_dir=a.out,
+        per_device_train_batch_size=a.batch,
+        gradient_accumulation_steps=a.accum,
+        num_train_epochs=a.epochs,
+        learning_rate=a.lr,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.03,
         # "no": save_pretrained below writes the adapter. Trainer checkpoints
         # also carry optimizer state (~1GB), which then gets copied to /staging
         # for nothing.
-        bf16=True, logging_steps=10, save_strategy="no",
-        eval_strategy="epoch", per_device_eval_batch_size=a.batch,
-        gradient_checkpointing=True, report_to=[], remove_unused_columns=False)
-    trainer = Trainer(model=model, args=args, train_dataset=train, eval_dataset=val,
-                      data_collator=DataCollatorForSeq2Seq(tok, padding=True, label_pad_token_id=-100))
+        bf16=True,
+        logging_steps=10,
+        save_strategy="no",
+        eval_strategy="epoch",
+        per_device_eval_batch_size=a.batch,
+        gradient_checkpointing=True,
+        report_to=[],
+        remove_unused_columns=False,
+    )
+    trainer = Trainer(
+        model=model,
+        args=args,
+        train_dataset=train,
+        eval_dataset=val,
+        data_collator=DataCollatorForSeq2Seq(
+            tok, padding=True, label_pad_token_id=-100
+        ),
+    )
     trainer.train()
     m = trainer.evaluate()
     if "eval_loss" in m:
-        print(f"final eval loss {m['eval_loss']:.4f}  (perplexity {math.exp(m['eval_loss']):.2f})")
+        print(
+            f"final eval loss {m['eval_loss']:.4f}  (perplexity {math.exp(m['eval_loss']):.2f})"
+        )
     model.save_pretrained(a.out)
     tok.save_pretrained(a.out)
     print(f"adapter saved to {a.out}")
-    print(f"serve with: vllm serve {a.base} --enable-lora --lora-modules sft={a.out} --max-lora-rank {a.rank}")
+    print(
+        f"serve with: vllm serve {a.base} --enable-lora --lora-modules sft={a.out} --max-lora-rank {a.rank}"
+    )
 
 
 if __name__ == "__main__":

@@ -29,25 +29,27 @@ of decisions. With 2-step lookahead, 15.8% have a survivable alternative the
 model passed up. That is 16x the signal, for ~3ms of pure-python search.
 Depth 3 finds nothing depth 2 misses, so 2 is the default.
 """
+
 import copy
 import re
+from typing import Any, Optional
 
 BOXED = re.compile(r"\\boxed\{\s*([UDS])\s*\}")
 VALID = "UDS"
-COLLIDED = -3.0         # hit a car this step
-DOOMED = -2.0           # safe this step, but cornered within LOOKAHEAD steps
+COLLIDED = -3.0  # hit a car this step
+DOOMED = -2.0  # safe this step, but cornered within LOOKAHEAD steps
 LOOKAHEAD = 2
-INVALID = -4.0          # worse than any legal action, including a collision
+INVALID = -4.0  # worse than any legal action, including a collision
 
 
-def parse_action(text):
+def parse_action(text: str) -> Optional[str]:
     """Last \\boxed{...} wins -- the traces reason aloud and may mention
     candidate actions before committing to one."""
     m = BOXED.findall(text or "")
     return m[-1] if m else None
 
 
-def survivable(env, k):
+def survivable(env: Any, k: int) -> bool:  # noqa: ANN401 - a realtimegym env
     """Is there any action sequence of length k from here that never collides?
     Exhaustive over 3^k, which is 9 env steps at the default depth."""
     if k <= 0:
@@ -62,7 +64,14 @@ def survivable(env, k):
     return False
 
 
-def score(env, completion, tokens=None, budget=4096, lam=0.0, lookahead=LOOKAHEAD):
+def score(
+    env: Any,  # noqa: ANN401 - a realtimegym env
+    completion: str,
+    tokens: Optional[int] = None,
+    budget: int = 4096,
+    lam: float = 0.0,
+    lookahead: int = LOOKAHEAD,
+) -> tuple[float, dict[str, Any]]:
     """Fork `env`, apply the action in `completion`, and score it.
 
     `env` is never mutated. Returns (reward, info) so callers can log the parts
@@ -71,8 +80,14 @@ def score(env, completion, tokens=None, budget=4096, lam=0.0, lookahead=LOOKAHEA
     """
     action = parse_action(completion)
     if action is None or action not in VALID:
-        return INVALID, {"action": None, "valid": False, "collided": False,
-                         "dead_end": False, "progress": 0.0, "len_pen": 0.0}
+        return INVALID, {
+            "action": None,
+            "valid": False,
+            "collided": False,
+            "dead_end": False,
+            "progress": 0.0,
+            "len_pen": 0.0,
+        }
 
     fork = copy.deepcopy(env)
     before = fork.pos
@@ -81,7 +96,7 @@ def score(env, completion, tokens=None, budget=4096, lam=0.0, lookahead=LOOKAHEA
     # teleports the player back, so progress comes from the action, not a diff
     progress = {"U": 1.0, "S": 0.0, "D": -1.0}[action]
     if not collided and fork.pos == before and action == "U":
-        progress = 0.0                      # blocked at the edge, not progress
+        progress = 0.0  # blocked at the edge, not progress
 
     # credit assignment: an action that is safe now but corners the agent is
     # the decision that actually loses these games
@@ -89,12 +104,24 @@ def score(env, completion, tokens=None, budget=4096, lam=0.0, lookahead=LOOKAHEA
 
     base = COLLIDED if collided else DOOMED if dead_end else progress
     len_pen = lam * (tokens / budget) if (lam and tokens) else 0.0
-    return base - len_pen, {"action": action, "valid": True, "collided": bool(collided),
-                            "dead_end": bool(dead_end), "progress": progress,
-                            "len_pen": len_pen}
+    return base - len_pen, {
+        "action": action,
+        "valid": True,
+        "collided": bool(collided),
+        "dead_end": bool(dead_end),
+        "progress": progress,
+        "len_pen": len_pen,
+    }
 
 
-def best_of(env, completions, tokens=None, budget=4096, lam=0.0, lookahead=LOOKAHEAD):
+def best_of(
+    env: Any,  # noqa: ANN401 - a realtimegym env
+    completions: list[str],
+    tokens: Optional[list[int]] = None,
+    budget: int = 4096,
+    lam: float = 0.0,
+    lookahead: int = LOOKAHEAD,
+) -> tuple[int, float, dict[str, Any]]:
     """-> (index, reward, info) of the highest-scoring completion.
 
     Ties break toward the SHORTER completion, which is what makes rejection
@@ -112,6 +139,7 @@ def best_of(env, completions, tokens=None, budget=4096, lam=0.0, lookahead=LOOKA
 
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, "src")
     import realtimegym
 
