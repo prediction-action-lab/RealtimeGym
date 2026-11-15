@@ -29,6 +29,7 @@ import glob
 import os
 import re
 from collections.abc import Iterable
+from typing import Any, cast
 
 import matplotlib
 
@@ -151,7 +152,9 @@ def load_runs(logs_root: str) -> tuple[pd.DataFrame, pd.DataFrame]:
                 df = pd.read_csv(csv)
             except Exception:
                 continue
-            row = dict(game=game, load=load, pressure=pressure, policy=pol)
+            row: dict[str, Any] = dict(
+                game=game, load=load, pressure=pressure, policy=pol
+            )
             if "plan_age" in df:
                 row["plan_ages"] = df["plan_age"].dropna().tolist()
             if "refreshed" in df:
@@ -423,7 +426,8 @@ def summary_and_stats(scores: pd.DataFrame, out: str) -> None:
         return
     print("\n=== Paired t-test vs vanilla (per cell, alpha=0.05) ===")
     rows = []
-    for (g, l, pr), cell in scores.groupby(["game", "load", "pressure"]):
+    for key, cell in scores.groupby(["game", "load", "pressure"]):
+        g, l, pr = cast("tuple[str, str, int]", key)
         # average any duplicate (seed) entries so pairing is 1:1
         van = cell[cell["policy"] == "vanilla"].groupby("seed")["score"].mean()
         for pol, d in cell.groupby("policy"):
