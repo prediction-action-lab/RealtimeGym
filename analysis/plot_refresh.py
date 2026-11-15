@@ -171,7 +171,10 @@ def load(
             m["seeds"] = len(v)
             if len(v) > 1:
                 b = rng.choice(v, size=(5000, len(v))).mean(axis=1)
-                lo, hi = np.quantile(b, [0.025, 0.975])
+                # one call per bound: the list form returns an array whose type
+                # the numpy stubs narrow to a scalar, so it will not unpack
+                lo = float(np.quantile(b, 0.025))
+                hi = float(np.quantile(b, 0.975))
                 m["sem"] = float(max(hi - m["score"], m["score"] - lo))
     return list(merged.values())
 
