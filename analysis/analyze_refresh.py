@@ -152,9 +152,12 @@ def load_runs(logs_root: str) -> tuple[pd.DataFrame, pd.DataFrame]:
                 df = pd.read_csv(csv)
             except Exception:
                 continue
-            row: dict[str, Any] = dict(
-                game=game, load=load, pressure=pressure, policy=pol
-            )
+            row: dict[str, Any] = {
+                "game": game,
+                "load": load,
+                "pressure": pressure,
+                "policy": pol,
+            }
             if "plan_age" in df:
                 row["plan_ages"] = df["plan_age"].dropna().tolist()
             if "refreshed" in df:
