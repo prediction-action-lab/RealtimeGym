@@ -62,12 +62,20 @@ where = ["src"]
 [tool.setuptools.package-data]
 realtimegym = ["prompts/*.yaml"]
 
+[tool.ty.environment]
+# analysis/ scripts import each other as top-level modules (they add their own
+# directory to sys.path), so it is a source root as far as type checking goes.
+extra-paths = ["analysis"]
+
 [tool.ty.src]
 exclude = [
     # Third-party vendored code from Overcooked-AI (https://github.com/HumanCompatibleAI/overcooked_ai)
     # See src/realtimegym/environments/overcooked_new/THIRD_PARTY_NOTICE.md for details
     "src/realtimegym/environments/overcooked_new/**",
     "src/realtimegym/environments/freeway.py",
+    # Needs torch and peft, which CI does not install (they only matter on a GPU
+    # node). Nothing here can be resolved without them.
+    "analysis/train_sft.py",
 ]
 
 # Note: ty does not currently have a rule to disallow implicit Any types
