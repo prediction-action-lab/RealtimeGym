@@ -215,8 +215,12 @@ def main() -> None:
     args.add_argument("--cognitive_load", type=str, choices=["E", "M", "H"])
     args.add_argument("--mode", type=str, choices=["agile", "reactive", "planning"])
     args.add_argument("--internal_budget", type=int, default=8192)
-    args.add_argument("--max_steps", type=int, default=None,
-                      help="cap env steps per episode (default: run to natural termination)")
+    args.add_argument(
+        "--max_steps",
+        type=int,
+        default=None,
+        help="cap env steps per episode (default: run to natural termination)",
+    )
     # Gap 3 — planning-thread refresh (agile mode). Off by default = vanilla.
     args.add_argument("--refresh_plan", action="store_true", default=False)
     args.add_argument("--refresh_every", type=int, default=0)

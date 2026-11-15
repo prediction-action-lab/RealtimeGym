@@ -17,8 +17,10 @@ IMPORTANT: this is a MECHANISM result, not a task-performance result. The
 scripted model does not play well (it just stays put); scores are meaningless
 here. Whether refresh *improves reward* requires the real LLM A/B (needs keys).
 """
+
 import os
 import tempfile
+from typing import Any
 
 import matplotlib
 
@@ -36,20 +38,28 @@ from realtimegym.agents.base import BaseAgent
 PALETTE = {"vanilla": "#000000", "refresh(every=3)": "#E69F00"}
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mock_figures")
 
-plt.rcParams.update({
-    "figure.dpi": 150, "font.size": 11, "axes.grid": True,
-    "grid.color": "#DDDDDD", "grid.linewidth": 0.8, "axes.axisbelow": True,
-    "axes.spines.top": False, "axes.spines.right": False,
-    "axes.edgecolor": "#888888",
-})
+plt.rcParams.update(
+    {
+        "figure.dpi": 150,
+        "font.size": 11,
+        "axes.grid": True,
+        "grid.color": "#DDDDDD",
+        "grid.linewidth": 0.8,
+        "axes.axisbelow": True,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "axes.edgecolor": "#888888",
+    }
+)
 
 
 class _WordTok:
     """Trivial tokenizer so token-mode partial-reveal logic works offline."""
-    def encode(self, text):
+
+    def encode(self, text: str) -> list[str]:
         return text.split()
 
-    def decode(self, toks, skip_special_tokens=True):
+    def decode(self, toks: list[str], skip_special_tokens: bool = True) -> str:
         return " ".join(toks)
 
 
@@ -61,7 +71,14 @@ class MockAgileThinker(AgileThinker):
       exactly the regime where a plan goes stale.
     - reactive call returns a fixed boxed action (so no network budget-forcing).
     """
-    def __init__(self, prompts, file, internal_budget=2048, plan_tokens=40000):
+
+    def __init__(
+        self,
+        prompts: Any,  # noqa: ANN401 - prompts is a dynamically loaded module
+        file: str,
+        internal_budget: int = 2048,
+        plan_tokens: int = 40000,
+    ) -> None:
         BaseAgent.__init__(self, prompts, file, time_unit="token")
         self.model1, self.model2 = "mock-reactive", "mock-planning"
         self.model1_config = {"inference_parameters": {}}
@@ -70,16 +87,29 @@ class MockAgileThinker(AgileThinker):
         self.tokenizer = _WordTok()
         # placeholder clients only satisfy isinstance() checks; generate() is
         # overridden so no network call is ever made.
-        self.llm1 = self.llm2 = OpenAI(api_key="mock-not-used", base_url="http://localhost")
+        self.llm1 = self.llm2 = OpenAI(
+            api_key="mock-not-used", base_url="http://localhost"
+        )
         self._plan_tokens = plan_tokens
 
-    def generate(self, llm, model, messages, sampling_params):  # noqa: ANN001
+    def generate(
+        self,
+        llm: OpenAI,
+        model: str,
+        messages: list[dict[str, str]],
+        sampling_params: dict[str, Any],
+    ) -> tuple[str, int]:
         if model == self.model2:  # planning "generation" (long, multi-step)
             return ("Plan: assess lanes, then advance. \\boxed{S}", self._plan_tokens)
         return ("Hold position this step. \\boxed{S}", 300)  # reactive
 
 
-def run_episode(refresh_kwargs, seed, max_steps=100, time_pressure=4096):
+def run_episode(
+    refresh_kwargs: dict[str, Any],
+    seed: int,
+    max_steps: int = 100,
+    time_pressure: int = 4096,
+) -> tuple[list[int], int]:
     env, _, _ = realtimegym.make("Freeway-v1", seed=seed)  # v1 = medium load
     tmp = os.path.join(tempfile.gettempdir(), f"mock_{seed}.csv")
     agent = MockAgileThinker(fw_prompts, file=tmp, internal_budget=2048)
@@ -97,7 +127,7 @@ def run_episode(refresh_kwargs, seed, max_steps=100, time_pressure=4096):
     return ages, agent.refresh_count
 
 
-def main():
+def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     policies = {
         "vanilla": dict(refresh_plan=False),
@@ -115,14 +145,18 @@ def main():
 
     # ---- summary table ----
     print("\n=== MECHANISM DEMO (scripted model — NOT task performance) ===")
-    print(f"{'policy':18} {'decisions':>9} {'median age':>11} {'max age':>8} "
-          f"{'% age>=3':>9} {'refreshes':>10}")
+    print(
+        f"{'policy':18} {'decisions':>9} {'median age':>11} {'max age':>8} "
+        f"{'% age>=3':>9} {'refreshes':>10}"
+    )
     for name, r in results.items():
         a = r["ages"]
         if len(a) == 0:
             continue
-        print(f"{name:18} {len(a):>9d} {np.median(a):>11.1f} {a.max():>8d} "
-              f"{100 * np.mean(a >= 3):>8.1f}% {r['refreshes']:>10d}")
+        print(
+            f"{name:18} {len(a):>9d} {np.median(a):>11.1f} {a.max():>8d} "
+            f"{100 * np.mean(a >= 3):>8.1f}% {r['refreshes']:>10d}"
+        )
 
     # ---- figure: plan-age CDF ----
     fig, ax = plt.subplots(figsize=(7, 4.6))
@@ -132,11 +166,15 @@ def main():
             continue
         ys = np.arange(1, len(a) + 1) / len(a)
         ax.plot(a, ys, "-", color=PALETTE[name], lw=2.2, label=name)
-    ax.set_xlabel("plan age at decision time (env steps since the acting plan was grounded)")
+    ax.set_xlabel(
+        "plan age at decision time (env steps since the acting plan was grounded)"
+    )
     ax.set_ylabel("cumulative fraction of decisions")
     ax.set_ylim(0, 1)
-    ax.set_title("Mechanism check: refresh caps how stale the acting plan gets\n"
-                 "(scripted model, real Freeway env — staleness, not task score)")
+    ax.set_title(
+        "Mechanism check: refresh caps how stale the acting plan gets\n"
+        "(scripted model, real Freeway env — staleness, not task score)"
+    )
     ax.legend(frameon=False, loc="lower right")
     fig.tight_layout()
     path = os.path.join(OUT, "mock_plan_age_cdf.png")

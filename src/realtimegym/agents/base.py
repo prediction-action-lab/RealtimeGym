@@ -176,7 +176,9 @@ class BaseAgent:
         self.refresh_carryover = refresh_carryover
 
     @staticmethod
-    def _state_distance(prev_state_string: Optional[str], cur_state_string: str) -> float:
+    def _state_distance(
+        prev_state_string: Optional[str], cur_state_string: str
+    ) -> float:
         """Game-agnostic distance in [0, 1] between two textual states.
 
         1 - difflib similarity ratio; 1.0 if there is no prior anchor.
@@ -186,9 +188,10 @@ class BaseAgent:
 
         if not prev_state_string:
             return 1.0
-        return 1.0 - difflib.SequenceMatcher(
-            None, prev_state_string, cur_state_string
-        ).ratio()
+        return (
+            1.0
+            - difflib.SequenceMatcher(None, prev_state_string, cur_state_string).ratio()
+        )
 
     def should_refresh_plan(self, observation: dict[str, Any]) -> bool:
         """Decide whether to re-ground the in-flight planning generation."""
