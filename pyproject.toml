@@ -33,6 +33,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The analysis/ scripts plot; the library itself does not.
+analysis = [
+    "matplotlib>=3.5.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
