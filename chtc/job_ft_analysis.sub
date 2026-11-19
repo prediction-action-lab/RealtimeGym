@@ -1,0 +1,39 @@
+# Submit from the chtc directory with: condor_submit job_ft_analysis.sub
+# Runs analysis/build_sft.py + analysis/train_sft.py on Snake data.
+# Trains BOTH adapters (reactive + planning), then evaluates them on Snake in the same job. Override MODE/EPOCHS_* on the environment line.
+
+universe = container
+container_image = docker://verlai/verl:vllm012.latest
+
+executable = job_ft_analysis.sh
+environment = "MODE=both RANK=32 EPOCHS_REACTIVE=3 EPOCHS_PLANNING=2"
+
+log = snake_ft_analysis.log
+output = snake_ft_analysis.out
+error = snake_ft_analysis.err
+
+stream_output = true
+stream_error = true
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = .env, job.sh, ../RealtimeGym.tar.gz
+# The adapter is written straight to CHTC staging by the script.
+transfer_output_files = ""
+
+request_cpus = 8
+request_memory = 160GB
+request_disk = 200GB
+request_gpus = 1
+
+requirements = \
+    (Target.CUDADriverVersion >= 12.1) && \
+    (Target.HasCHTCStaging == true) && \
+    (Target.GPUs_GlobalMemoryMb > 70000) && \
+    (Target.Machine != "gpulab2004.chtc.wisc.edu")
+
++WantGPULab = false
++WantFlocking = false
++WantGlidein = false
++GPUJobLength = "long"
+
+queue 1

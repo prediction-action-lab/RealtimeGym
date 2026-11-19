@@ -1,0 +1,230 @@
+[
+    {
+        "step": 0,
+        "score": 0,
+        "thinking": "Still thinking...",
+        "state": {
+            "snake": [
+                [
+                    3,
+                    3
+                ]
+            ],
+            "direction": "L",
+            "food": [
+                [
+                    1,
+                    1,
+                    10,
+                    1
+                ],
+                [
+                    3,
+                    2,
+                    10,
+                    1
+                ],
+                [
+                    5,
+                    3,
+                    10,
+                    1
+                ]
+            ],
+            "obstacles": [
+                [
+                    6,
+                    4
+                ],
+                [
+                    5,
+                    1
+                ],
+                [
+                    2,
+                    4
+                ],
+                [
+                    6,
+                    1
+                ],
+                [
+                    1,
+                    2
+                ],
+                [
+                    5,
+                    6
+                ],
+                [
+                    5,
+                    2
+                ],
+                [
+                    3,
+                    5
+                ]
+            ],
+            "game_turn": 0,
+            "terminal": false
+        },
+        "action": "S",
+        "original_state": "**Current Turn**: \\( t_1 = 0 \\)\n**Cells occupied by walls**:\n\t - Border Cells: x=0/x=7 or y=0/y=7.\n\t - Internal Obstacles: [(6, 4), (5, 1), (2, 4), (6, 1), (1, 2), (5, 6), (5, 2), (3, 5)]\n**Snake Positions**:[(3, 3)]\n**Snake Head Direction**: L\n**Food Positions, Life Span and Value**:\n\t- (1, 1, 10, 1)\n\t- (3, 2, 10, 1)\n\t- (5, 3, 10, 1)\n"
+    },
+    {
+        "step": 1,
+        "score": 0,
+        "thinking": "<think>First, the current turn is t1 = 0. The grid has walls: border cells are x=0, x=7, y=0, y=7, so it's an 8x8 grid from (0,0) to (7,7). Internal obstacles are at (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5). Snake positions are just [(3,3)], which means the snake is only one segment long—just the head. Head direction is left, so currently moving left.\n\nFood items:\n\n- (1,1) with value 1 and life span 10\n\n- (3,2) with value 1 and life span 10\n\n- (5,3) with value 1 and life span 10\n\nAll food is positive since value is +1, and life span is 10 for each, meaning they'll disappear after 10 turns if not eaten.\n\nSince the snake is only one segment, there's no body to worry about except itself. But it can grow by eating food.\n\nI need to think 5+ turns ahead to maximize score while avoiding risks. Prioritize long-term survival.\n\nFirst, let's sketch the grid. I'll assume coordinates: (0,0) is bottom-left, (7,7) top-right, but since it's a grid, direction might not matter, but I should be consistent.\n\nTypically in such games, y increases upwards, so (0,0) bottom-left, (0,7) top-left, (7,0) bottom-right, (7,7) top-right.\n\nBut walls: x=0 left border, x=7 right border, y=0 bottom, y=7 top. So cells from x=0 to x=7, but x=0 and x=7 are walls, so snake can only be from x=1 to x=6? No, walls occupy cells, so if x=0 is a wall, then (0,y) for all y are walls, similarly x=7, y=0, y=7.\n\nInternal obstacles: (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5)\n\nSnake head at (3,3), direction left, so it was moving left to get to (3,3)? Positions are given as [(3,3)], so at turn 0, it's at (3,3), and direction is L, meaning it was moving left, so it came from the right? But since it's only one segment, it might have just started.\n\nHead direction: since it's moving left, from (3,3), possible moves: it can go U, D, L, R, but cannot instantly reverse. Reverse of L is R, so it cannot go right immediately. So possible moves: U (up), D (down), L (left), but not R (right) because that would be reverse.\n\nCurrent direction L, so cannot move right (opposite).\n\nAvailable moves: Up, Down, Left.\n\nNow, where can it move?\n\nCurrent position: (3,3)\n\nMove left: to (2,3)\n\nMove up: to (3,4)\n\nMove down: to (3,2)\n\nNow, check for collisions:\n\n- Walls: borders, so x=0, x=7, y=0, y=7 are walls. Also internal obstacles.\n\n(2,3): is this a wall? x=2, y=3. Borders: x=0 and x=7 are walls, so x=2 is not border wall. y=3 not 0 or 7. Internal obstacles: (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5). (2,3) not in list, so safe.\n\nSimilarly, (3,4): not border, not in obstacles except (3,5) is obstacle, but (3,4) is different. Obstacles: (3,5) is one, but (3,4) is clear.\n\n(3,2): not border, obstacles have (1,2) and (5,2), but (3,2) not there.\n\nAlso, since no body, no self-collision.\n\nFood: (1,1), (3,2), (5,3)\n\n(3,2) has food! If it moves down to (3,2), it can eat the food there.\n\nBut need to think long-term.\n\nFirst, let's list all possible moves from (3,3):\n\n- Left: to (2,3) - no food, not wall\n\n- Up: to (3,4) - no food, not wall\n\n- Down: to (3,2) - has food (3,2) with value +1\n\nIf it eats, snake grows to length 2, with head at (3,2), tail at (3,3) or something.\n\nAfter eating, when it moves to a food cell, it eats and grows, so the tail doesn't move that turn? Standard snake: when head moves to food, it eats, and the tail doesn't move, so snake grows by one segment.\n\nIn this case, since snake is length 1, after eating, it will be length 2, with positions: head at food, and previous head becomes tail. So from [(3,3)] moving to (3,2) with food, new positions: [(3,2), (3,3)] with head at (3,2).\n\nThen, next turn, when it moves, the tail will move to follow, but since it grew, the tail stays for that turn? I need to clarify the movement.\n\nTypically in snake, when head moves to a new cell:\n\n- If no food, head moves, tail moves forward, so length same.\n\n- If food, head moves to food, eats, tail does not move, so new segment added, length increases.\n\nThen next moves, tail follows.\n\nIn this case, turn 0: snake at [(3,3)]\n\nIf action: down to (3,2), which has food, so after move: positions [(3,2), (3,3)] with head at (3,2), and direction would be down.\n\nSimilarly, if no food, just move to new position, but since length 1, moving to empty cell would leave no tail, so positions just the new head position.\n\nBut with food, it grows.\n\nNow, back to decision.\n\nPossible actions:\n\n- Left: to (2,3), no food, so snake remains length 1 at (2,3)\n\n- Up: to (3,4), no food, length 1 at (3,4)\n\n- Down: to (3,2), with food, eat, grow to length 2, head at (3,2), tail at (3,3)\n\nNow, I need to think multiple turns ahead.\n\nFood life span: all have life span 10, so at turn 0, life span 10, meaning after 10 turns, they disappear. Since countdown decreases every turn including current, after turn 0, life span becomes 9, and so on, until 0, then disappear.\n\nBut since we're at turn 0, all have 10 turns left.\n\nNow, also, the food at (3,2) is right below, so moving down eats it immediately.\n\nBut is that good? Value +1, but we need to think long-term.\n\nThere might be risks.\n\nFirst, let's map the grid to visualize.\n\nGrid 8x8, but walls at borders and internal obstacles.\n\nList all wall cells:\n\n- All cells with x=0 or x=7 or y=0 or y=7\n\n- Plus internal: (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5)\n\nSo let's write coordinates:\n\nx from 0 to 7, y from 0 to 7.\n\nWalls:\n\n- Left: (0,0) to (0,7)\n\n- Right: (7,0) to (7,7)\n\n- Bottom: (0,0) to (7,0) but (0,0) and (7,0) already included, so (1,0) to (6,0) and (1,7) to (6,7) are borders? No.\n\nBorder walls: cells where x=0 or x=7 or y=0 or y=7. So for example, (0,1), (0,2), ..., (0,6) are walls, similarly (7,1) to (7,6), and (1,0), (2,0), ..., (6,0), and (1,7), (2,7), ..., (6,7). Corners like (0,0) are included.\n\nInternal obstacles: (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5)\n\n(5,2) is an obstacle, and (1,2) etc.\n\nNow, snake at (3,3)\n\nFood at (1,1), (3,2), (5,3)\n\n(3,2) is directly below, (5,3) is right, but head direction is left, so cannot go right immediately.\n\n(1,1) is down-left.\n\nCurrent possible moves:\n\n- Left: to (2,3) - empty\n\n- Up: to (3,4) - empty\n\n- Down: to (3,2) - food\n\nIf I go down and eat, I get +1 score, snake grows to length 2 with head at (3,2), tail at (3,3)\n\nThen, from there, possible moves.\n\nBut I need to think 5 turns ahead.\n\nSince all food has life span 10, and grid is small, I can consider paths to food.\n\nBut there might be danger later.\n\nFirst, let's consider not eating immediately to avoid growing, but since snake is small, growing is good to have more flexibility? No, longer snake is harder to maneuver, but with length 1, it's easy.\n\nBut to score, I need to eat.\n\nPrioritize survival, but at start, no immediate danger.\n\nAnother thing: the food at (3,2) might be risky if I eat it because of tail reward danger, but tail reward danger is when head is adjacent to tail and tail cell has food, eating it causes collision because tail doesn't move and head moves to it.\n\nBut in this case, after eating, tail is at (3,3), head at (3,2), so they are adjacent vertically. But tail cell is (3,3), which has no food; the food was at (3,2) which is eaten, so (3,3) is just tail, no food there.\n\nTail reward danger is when the tail segment itself has food on it, and you eat that food when head is adjacent to tail.\n\nBut here, after eating (3,2), the cell (3,3) has no food; it's just the tail segment.\n\nSo no issue.\n\nNow, from (3,2), with direction down (since moved down), so cannot move up immediately (reverse).\n\nPossible moves: from (3,2)\n\n- Left: to (2,2)\n\n- Right: to (4,2) - but is that wall? (4,2): x=4,y=2. Walls: not border, obstacles: (5,1), (1,2), (5,2), etc. (5,2) is obstacle, but (4,2) not listed, so should be empty.\n\n(4,2) not in obstacles, not border, so ok.\n\n- Down: to (3,1) - y=1, not 0, so not bottom wall. Obstacles: (5,1), (6,1), (1,2), but (3,1) not there. (1,2) is obstacle, but different cell. So (3,1) should be empty.\n\n- Up: but cannot, because reverse direction.\n\nDirection is down, so reverse is up, cannot move up.\n\nSo from (3,2), can go left to (2,2), right to (4,2), down to (3,1).\n\nNow, food: (1,1) and (5,3) are left, but (5,3) is at (5,3), which is not adjacent.\n\n(1,1) is at (1,1), which is down-left.\n\n(3,1) is directly below (3,2), no food.\n\n(2,2): is there food? No, food at (1,1), (5,3), and (3,2) eaten.\n\n(4,2): no food.\n\nSo no food adjacent after eating (3,2).\n\nThen I need to go towards other food.\n\nBut let's think if I don't eat now.\n\nFor example, if I go left to (2,3) at turn 0.\n\nThen at (2,3), no food, snake still length 1, direction left? After moving, head at (2,3), came from left? Moved from (3,3) to (2,3), so direction left.\n\nThen from (2,3), possible moves: left, up, down, not right (reverse).\n\nLeft to (1,3): is that wall? x=1,y=3, not border, obstacles: (1,2) is obstacle, but (1,3) not listed, so should be ok.\n\nUp to (2,4): but (2,4) is obstacle? Obstacles include (2,4), yes, (2,4) is internal obstacle, so wall! Cannot go there.\n\nDown to (2,2): no obstacle.\n\nRight: cannot, reverse.\n\nSo from (2,3), can go left to (1,3), down to (2,2), not up because (2,4) is wall.\n\n(2,4) is obstacle, so cannot move to (2,4).\n\nSimilarly, if I go up from (3,3) to (3,4).\n\n(3,4): not wall, but (3,5) is obstacle, but (3,4) is clear.\n\nThen from (3,4), direction up, so cannot move down.\n\nCan go left to (2,4), but (2,4) is obstacle! (2,4) is internal wall, so cannot go left.\n\nRight to (4,4): not wall.\n\nUp to (3,5): but (3,5) is obstacle! Cannot go.\n\nDown: cannot, reverse.\n\nSo only possible move: right to (4,4)\n\nThen to (4,4), empty, etc.\n\nNot efficient.\n\nDown to (3,2) with food seems good to eat immediately.\n\nBut let's think about the food at (1,1) and (5,3).\n\n(5,3) is at (5,3), which is to the right, but from (3,3), I cannot go right immediately because of no reverse.\n\nIf I go down to (3,2) and eat, then I'm at (3,2) with tail at (3,3).\n\nThen I can go left to (2,2), or right to (4,2), or down to (3,1).\n\nNow, (1,1) is at bottom-left, (5,3) at right.\n\nFrom (3,2), going to (3,1) is down, then from (3,1) I can go left to (2,1) or right to (4,1), etc., towards (1,1).\n\nOr go left to (2,2), then to (1,2), but (1,2) is obstacle! (1,2) is internal wall, so cannot go to (1,2).\n\nSimilarly, from (2,2), I can go to (1,2) but it's wall, or down to (2,1), or left to (1,2) wall, etc.\n\n(2,2) to (1,2) is left, but (1,2) wall, so cannot.\n\n(2,2) to (2,1) down, or (2,2) to (3,2) but that's back, but with direction, from (2,2), if I came from left or down, etc.\n\nBut let's not digress.\n\nPerhaps eating (3,2) is fine, but let's see the position.\n\nAnother thing: the food at (3,2) has life span 10, so I don't have to eat it now, I can come back later.\n\nBut since it's adjacent, and I can eat it safely, why not?\n\nBut after eating, I have a tail, which might block paths.\n\nFor example, after eating (3,2), I have tail at (3,3). If I move away, say to (3,1) down, then tail moves to (3,2), so positions: head at (3,1), tail at (3,2), length 2.\n\nThen from there, I can go left to (2,1), or right to (4,1), not up because reverse (moved down, so direction down, cannot up).\n\n(2,1): not wall, obstacles: (5,1) but (2,1) not there.\n\n(4,1): similarly.\n\nThen to reach (1,1), I can go from (2,1) to (1,1) left, but (1,1) is at corner, and (1,2) is wall above, so from (2,1) to (1,1) is possible.\n\n(1,1) is not wall, and no obstacle listed, so ok.\n\nSimilarly, to reach (5,3), it's at (5,3), which has an obstacle at (5,2) and (5,1), but (5,3) is clear.\n\n(5,2) is obstacle, so (5,3) is above, but (5,1) obstacle below.\n\nFrom current, it's a bit far.\n\nBut life span 10, so plenty of time.\n\nNow, if I don't eat (3,2) now, I can go left to (2,3) or up to (3,4).\n\nBut up to (3,4) only allows right to (4,4), as I thought earlier.\n\nFrom (4,4), then I can go to other places.\n\nBut (3,2) food might expire by the time I come back if I go away.\n\nLife span 10, but I can return.\n\nBut let's think about the tail reward danger for other food.\n\nFor example, food at (1,1): if I go there with head adjacent to tail, and eat it, it might be dangerous if tail has food, but in this case, no food on tail.\n\nTail reward danger only if the tail cell has food on it when I eat from adjacent position.\n\nBut food is on separate cells.\n\nThe rule: \"Tail Reward Danger: If the head is adjacent to the tail and the tail cell has positive food, eating it kills the snake, because the head and newly grown tail will collide.\"\n\nSo it's when the tail segment itself has food on that cell, and I eat that food from adjacent position.\n\nBut in this state, no food on any snake segment, since snake is at (3,3) only, no food there.\n\nAfter eating, the cell where food was is now head, so no food on tail cell unless new food spawns under body.\n\nBut for now, no issue.\n\nSo for (1,1), it's safe to eat as long as not adjacent to tail when eating, but since tail might move, it's complicated.\n\nI should simulate a few moves.\n\nSince I need to output actions for multiple turns, but the problem says \"Think 5+ turns ahead\" but the answer format is to output actions for turns starting from t1=0.\n\n\"Answer Format: \\boxed{ Turn t1: action, Turn t1+1: action, ... }\"\n\nBut it doesn't specify how many turns; I think I need to provide a sequence of actions for the next few turns, but since the state changes, I might need to plan a path.\n\nThe instruction is to think ahead but output for the current turn and possibly future, but in practice, for each turn, I decide based on state.\n\nBut here, I need to provide a sequence starting from turn 0.\n\nPerhaps for 5 turns or something.\n\nThe core rule says \"Think 5+ turns ahead\" for decision making, but for output, I need to give actions for turns from 0 onwards.\n\nBut since food life span changes, I should plan a path to eat food while avoiding dead ends.\n\nLet's list all free cells and plan a route.\n\nFirst, grid cells that are not walls.\n\nWalls: borders and internal obstacles.\n\nInternal obstacles: (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5)\n\nSo let's mark the grid.\n\nI'll make a mental map.\n\nRow y=7: walls at (x,7) for x=0 to 7 except no internal? All border top.\n\nSimilarly y=0 bottom.\n\nx=0 left, x=7 right.\n\nThen for y=1 to 6, x=1 to 6 except obstacles.\n\nObstacles at: (6,4), (5,1), (2,4), (6,1), (1,2), (5,6), (5,2), (3,5)\n\n(5,6): y=6, which is below y=7, so not border, but obstacle.\n\nSimilarly, (5,6) is at (5,6), which is near top but not border.\n\nFree cells: all other cells.\n\nSnake at (3,3)\n\nFood at (1,1), (3,2), (5,3)\n\n(3,2) is very close.\n\nDistance to (1,1): from (3,3) to (1,1) is |3-1| + |3-1| = 2+2=4 Manhattan, but with obstacles, not direct.\n\nSimilarly to (5,3): |3-5| + |3-3| = 2+0=2, but cannot go right directly.\n\nWith no reverse, from (3,3), to (5,3), I have to go around, e.g., down to (3,2), then right to (4,2), then up to (4,3), then right to (5,3), but (4,2) to (4,3) up, then to (5,3) right.\n\nBut (4,2) might be ok, but let's see.\n\nFrom (3,3), if I go down to (3,2) and eat, then I'm at (3,2), then I can go right to (4,2), then up to (4,3), then right to (5,3) to eat.\n\nFrom (4,3) to (5,3), (5,3) has food.\n\nBut at (4,3), moving right to (5,3), eat.\n\nSimilarly, to go to (1,1), from (3,2) go left to (2,2), then down to (2,1), then left to (1,1).\n\n(2,2) to (2,1) down, then (2,1) to (1,1) left.\n\n(2,1) is free? y=1, x=2, not border, obstacles: (5,1), (6,1), (1,2) but not (2,1), so free.\n\n(1,1) free.\n\nBut (1,2) is obstacle, so (1,1) is accessible only from left or down, but x=0 wall, y=0 wall, so only from (1,2) above or (2,1) right, but (1,2) is wall, so only from (2,1) to (1,1) or from (1,0) but y=0 wall, so only from (2,1).\n\nSimilarly, (1,1) can only be accessed from (2,1) or (1,2) but (1,2) wall, so only from (2,1).\n\nSo it's a bit of a dead end if I go there, but I can eat and come out.\n\nSince snake is short, it's ok.\n\nBut let's plan to eat both foods.\n\nFirst, eat (3,2) at turn 0.\n\nTurn 0: move down to (3,2), eat food, snake becomes [(3,2), (3,3)] with head at (3,2), direction down.\n\nNow turn 1: from (3,2), can move left, right, or down (not up).\n\nI should go towards (5,3) since it's closer.\n\nMove right to (4,2).\n\n(4,2): no food, not wall. So move, no eat, tail moves, so positions: head at (4,2), tail at (3,2) now? After move: head to (4,2), tail from (3,3) moves to (3,2)? Standard: when no eat, head moves to new cell, tail moves to where head was, so from positions [(3,2), (3,3)], head moves to (4,2), so new positions: head (4,2), and the body (3,2), so [(4,2), (3,2)].\n\nLength 2.\n\nDirection: moved right, so direction right.\n\nTurn 1: moved right to (4,2), direction right.\n\nTurn 2: from (4,2), can move up, down, right (not left, reverse).\n\nPossible: up to (4,3), down to (4,1), right to (5,2) but (5,2) is obstacle! (5,2) is internal wall, so cannot go right.\n\nDown to (4,1): not wall, obstacles: (5,1) but (4,1) not there, so free.\n\nUp to (4,3): free, no obstacle.\n\n(4,3) has no food, food at (5,3).\n\nSo go up to (4,3).\n\nMove up to (4,3), no food, so positions: head at (4,3), tail at (4,2)? Previous positions [(4,2), (3,2)], head to (4,3), tail to (4,2), so [(4,3), (4,2)].\n\nDirection up.\n\nTurn 3: from (4,3), can move up, left, right (not down, reverse).\n\nUp to (4,4), left to (3,3), right to (5,3).\n\n(5,3) has food! So move right to (5,3), eat food.\n\nEat, so head to (5,3), tail stays, so positions: head (5,3), body (4,3), tail (4,2)? After eat: head moves to food, new segment, so positions: [(5,3), (4,3), (4,2)]? Let's see: before move, positions [(4,3), (4,2)], head at (4,3).\n\nMove to (5,3), which has food, so eat, head now at (5,3), and tail does not move, so the previous head (4,3) becomes part of body, and new segment? Standard: the snake grows, so positions become: head at new position, followed by previous positions except tail doesn't move, so length increases.\n\nBefore move: segments [A, B] where A is head (4,3), B is tail (4,2)\n\nAfter moving head to new cell C (5,3), with food, so new segments: [C, A, B] so [(5,3), (4,3), (4,2)]\n\nHead at (5,3), body at (4,3), tail at (4,2)\n\nDirection: moved right, so direction right.\n\nNow, food eaten: (3,2) at turn 0, (5,3) at turn 3.\n\nNow, (1,1) still there.\n\nLife span: at turn 0, all life span 10. After each turn, life span decreases.\n\nTurn 0: after move, life span decreases? \"Countdown decreases every turn (including current)\"\n\nSo at turn t, before action, food has life span L, after action, it decreases.\n\nThe rule: \"Life-span disappears after N turns, countdown decreases every turn (including current)\"\n\nFor example, at turn 0, food has life span 10.\n\nAfter turn 0 action, it becomes 9, and so on.\n\nWhen life span reaches 0, it disappears at the end of that turn or before next? But since we move and eat before decrease, I think we can eat if life span >0 before action.\n\nBut anyway.\n\nIn this case, (1,1) has life span 10 at turn 0.\n\nAfter turn 3, it has life span 7 left? Let's track turns.\n\nTurn 0: action, then life span decrease after action? Or before?\n\nThe rule: \"countdown decreases every turn (including current)\"\n\nAnd \"disappears after N turns\" meaning after N decreases.\n\nProbably, at the start of turn, food has life span L, we move, if head moves to food, eat, then after move, life span decreases for all food.\n\nIf life span was 1, after decrease to 0, it disappears.\n\nBut since we eat before decrease, we can eat if life span >=1 before action.\n\nSimilarly, for disappearance, after decrease to 0, gone.\n\nIn sequence:\n\n- At turn t, food has life span L\n\n- Snake moves to a cell\n\n- If that cell has food with L>0, eat it, and food is removed\n\n- Then, after move, all food life span decrease by 1\n\n- If any life span becomes 0, that food disappears.\n\nBut since we already ate, it's removed before decrease.\n\nSo for eating, as long as life span >0 at start of turn, it can be eaten.\n\nThen after move, decrease.\n\nFor (1,1) at turn 0: life span 10, can be eaten.\n\nAfter turn 0: life span 9, and so on.\n\nBack to sequence.\n\nAfter turn 3, snake at [(5,3), (4,3), (4,2)] head at (5,3), direction right.\n\nNow, to eat (1,1), which is far.\n\nFrom (5,3), possible moves: since direction right, can move up, down, right (not left).\n\nUp to (5,4), down to (5,2) but (5,2) is obstacle, cannot.\n\nRight to (6,3), but (6,3): x=6, not 7, so not border. Obstacles: (6,4), (6,1), but (6,3) not listed, so free.\n\n(6,3) is free? Obstacles: (6,4) and (6,1), so (6,3) should be free.\n\nSimilarly, (5,4) up: not wall, obstacles (5,6), (6,4), but (5,4) not listed, so free.\n\nBut (5,4) has no food.\n\nNow, to go to (1,1), I need to go left and down.\n\nBut from (5,3), I can move up to (5,4) or right to (6,3) or down not possible.\n\n(5,2) obstacle.\n\nMove up to (5,4): no food, positions: head to (5,4), tail moves, so from [(5,3), (4,3), (4,2)], head to (5,4), no eat, so new: head (5,4), then (5,3), then (4,3)? Tail moves: the last segment (4,2) is left behind, new tail is (4,3)? Positions: after move, head at new position, each body segment moves to previous position.\n\nSo before: segments: S0: (5,3) head, S1: (4,3), S2: (4,2) tail\n\nMove head to (5,4), no food, so new head at (5,4), S1 moves to S0 old position (5,3), S2 moves to S1 old position (4,3), so positions: [(5,4), (5,3), (4,3)]\n\nTail at (4,3)\n\nDirection up.\n\nThen from there, it might be messy.\n\nFrom turn 3, snake at (5,3), I can move left? But cannot, because direction right, reverse left not allowed.\n\nOnly up, down, right, but down to (5,2) impossible, so only up or right.\n\nIf I go right to (6,3), then similar.\n\nBut (1,1) is at (1,1), I need to go there.\n\nPerhaps I should not have eaten (5,3) yet and go to (1,1) first.\n\nBut let's go back to turn 0.\n\nAt turn 0, if I don't eat (3,2), I can go left to (2,3).\n\nThen at (2,3), no food, snake still length 1.\n\nThen turn 1: from (2,3), direction left (since moved left), can move left, down, up not possible because (2,4) wall.\n\nSo left to (1,3) or down to (2,2).\n\n(1,3) is free, no obstacle.\n\n(2,2) free.\n\nNow, (1,1) is below, so go down to (2,2) first.\n\nTurn 1: from (2,3) move down to (2,2), no food, positions: head at (2,2), direction down.\n\nTurn 2: from (2,2), can move down, left, right (not up, reverse).\n\nDown to (2,1), left to (1,2) but (1,2) obstacle! Cannot.\n\nRight to (3,2) but (3,2) has food, but I didn't eat it yet.\n\n(3,2) food is still there.\n\nBut from (2,2), move down to (2,1) or right to (3,2).\n\nIf move right to (3,2), eat food, then grow.\n\nBut let's see.\n\nTo reach (1,1), from (2,2) move down to (2,1), then turn 3 move left to (1,1) eat.\n\nFrom (2,1) to (1,1) left, eat.\n\nThen snake grows.\n\nBut at turn 0, if I go left to (2,3), then turn 1 down to (2,2), turn 2 down to (2,1), turn 3 left to (1,1) eat.\n\nAt turn 0, (1,1) life span 10, after 3 turns, at turn 3 start, life span 7, still can eat.\n\nSimilarly, (3,2) is at (3,2), life span decreasing.\n\nAfter eating (1,1), I can go to (3,2) or (5,3).\n\nBut (3,2) might be closer.\n\nFrom (1,1), after eating, head at (1,1), tail at (2,1) or something.\n\nPositions: before move to (1,1), if snake was at (2,1) length 1, move to (1,1) eat, so new positions [(1,1), (2,1)] head at (1,1), direction left.\n\nThen from there, can move up, but (1,2) obstacle, cannot; down to (1,0) but y=0 wall, cannot; left to (0,1) x=0 wall, cannot; only right to (2,1), but (2,1) is tail, and moving to tail cell.\n\nMove to (2,1): but (2,1) is the tail position.\n\nWhen moving to a cell, if it is occupied by body, it collides.\n\nPositions: head at (1,1), tail at (2,1)\n\nIf I move right to (2,1), but (2,1) is occupied by the tail, so head touches body, collision, death.\n\nOh! Problem.\n\nFrom (1,1), the only possible move is to (2,1), but that's where the tail is, so if I move there, head collides with tail, game over.\n\nBut when the tail moves, it might not be there.\n\nAt the moment of move, if head moves to a cell occupied by body, it collides.\n\nIn this case, from head (1,1), moving to (2,1), which is occupied by tail, so collision.\n\nNo other moves possible, since up, down, left all blocked.\n\nSo (1,1) is a dead end! If I eat there with a snake that has a body, I get stuck.\n\nSpecifically, after eating at (1,1), the snake has head at (1,1) and tail at (2,1), and I can only move to (2,1), which is occupied, so die.\n\nTherefore, it's dangerous to eat (1,1) unless the tail is not behind it or something.\n\nBut in this case, since I came from (2,1), the tail is there.\n\nIf the snake is longer, it might be different, but here with length 2, it's fatal.\n\nTherefore, I should avoid eating (1,1) because it leads to a dead end.\n\nSimilarly, for any food in a cell with only one access, it might be risky.\n\n(1,1) has only one neighbor: (2,1), since (1,2) is wall, (0,1) wall, (1,0) wall.\n\nSo after eating, head at (1,1), tail at the only entrance, so next move, I have to move back to where tail is, collision.\n\nTherefore, I should not eat (1,1) at all, or only if I can leave immediately, but impossible here.\n\nSo better to avoid (1,1).\n\nSimilarly, check other food.\n\n(3,2) at (3,2): neighbors: up (3,3), down (3,1), left (2,2), right (4,2). All free except possibly obstacles, but here no, so multiple exits.\n\nSimilarly, (5,3) at (5,3): neighbors: up (5,4), down (5,2) but (5,2) obstacle, left (4,3), right (6,3). (5,2) wall, so only up, left, right.\n\nBut (6,3) free, (4,3) free, (5,4) free.\n\nSo not dead end.\n\nBut for (1,1), it is a dead end, so I should not eat it.\n\nTherefore, I can ignore (1,1) and focus on other food.\n\nFood at (3,2) and (5,3).\n\nNow, back to turn 0.\n\nAt (3,3), head direction left.\n\nI can eat (3,2) by moving down.\n\nThen, as before, go to (5,3).\n\nIn the earlier sequence, I did that.\n\nTurn 0: down to (3,2) eat.\n\nThen turn 1: from (3,2), move right to (4,2) (since direction down, can move right).\n\nAfter turn 0, head at (3,2), direction down.\n\nTurn 1: move right to (4,2), no eat, positions: head (4,2), body (3,2), tail (3,3) but tail moved? After turn 0: positions [(3,2), (3,3)]\n\nTurn 1: move head to (4,2), no food, so tail moves to (3,2), so positions [(4,2), (3,2)]\n\nDirection right.\n\nTurn 2: from (4,2), can move up to (4,3), down to (4,1), right to (5,2) but (5,2) obstacle, cannot.\n\nSo move up to (4,3), no food, positions: head (4,3), body (4,2), so [(4,3), (4,2)]? Previous [(4,2), (3,2)], head to (4,3), so S1 moves to (4,2), tail moves to (3,2)? Segments: before: S0: (4,2), S1: (3,2)\n\nHead S0 to (4,3), so new S0: (4,3), S1 moves to old S0 position (4,2), so positions [(4,3), (4,2)]\n\nTail at (4,2)\n\nDirection up.\n\nTurn 3: from (4,3), can move up to (4,4), left to (3,3), right to (5,3).\n\n(5,3) has food, so move right to (5,3), eat.\n\nEat, so head to (5,3), tail stays, positions: [(5,3), (4,3), (4,2)] head (5,3), body (4,3), tail (4,2)\n\nDirection right.\n\nNow, no more food, but I have eaten two, score 2.\n\nBut I need to survive.\n\nFrom here, I can move to other areas.\n\nBut (1,1) is there, but I should avoid it.\n\nOther food might spawn later, but for now, only these.\n\nLife span: (1,1) will disappear after 10 turns, but I won't eat it.\n\nNow, for the sequence, I have actions for turn 0 to 3.\n\nBut I need to output for multiple turns, say 5 turns.\n\nAfter turn 3, I need to plan ahead.\n\nSnake at [(5,3), (4,3), (4,2)] head (5,3), direction right.\n\nPossible moves: up to (5,4), right to (6,3), down to (5,2) impossible.\n\n(5,4) or (6,3).\n\n(5,4): free, no food.\n\n(6,3): free, no food.\n\nSay move right to (6,3), no eat.\n\nTurn 4: move to (6,3), positions: head (6,3), body (5,3), tail (4,3) since before [(5,3),(4,3),(4,2)], head to (6,3), no eat, so S1 to (5,3), S2 to (4,3), so [(6,3), (5,3), (4,3)] tail at (4,3)\n\nDirection right.\n\nThen turn 5: from (6,3), can move up to (6,4), but (6,4) is obstacle! (6,4) internal wall, cannot.\n\nDown to (6,2), not wall, obstacles: (6,1) but (6,2) not listed, so free.\n\nLeft to (5,3), but that's body, collision.\n\nRight to (7,3) but x=7 wall, cannot.\n\nSo only down to (6,2) or up not possible.\n\nMove down to (6,2), no food.\n\nEtc.\n\nBut I need to output actions starting from turn 0.\n\nIn the sequence, for turn 0 to 3, I have down, right, up, right.\n\nIn the answer, I need to specify for each turn.\n\nBut turn 1 was right, turn 2 up, turn 3 right.\n\nNow, for long-term, I should avoid areas where I might get trapped.\n\nSince I ate two food, I can move around.\n\nBut to maximize score, I should look for more food, but no other food now.\n\nPerhaps after some turns, new food spawns, but not specified, so assume only these foods.\n\nBut life span decreases, so (1,1) will disappear.\n\nIn the initial plan, eating (3,2) and (5,3) is good.\n\nAt turn 0, another option: go left to (2,3), then to other places, but (3,2) might be eaten later.\n\nFor example, from (3,3), go left to (2,3), turn 0.\n\nThen turn 1, from (2,3) move down to (2,2), since up not possible.\n\nDown to (2,2), no food.\n\nThen turn 2, from (2,2) move down to (2,1), no food.\n\nThen turn 3, from (2,1) move left to (1,1) but (1,1) is dead end, so I should not do that.\n\nFrom (2,2), instead of down, move right to (3,2) to eat.\n\nBut (3,2) is there.\n\nBut after turn 0 left to (2,3), turn 1 down to (2,2), turn 2 right to (3,2) eat.\n\nThen similar to before.\n\nBut I missed (5,3), which might be farther.\n\n(5,3) life span 10, so I can go later.\n\nBut with obstacles, it might be tight.\n\nSince (1,1) is bad, I should focus on (3,2) and (5,3).\n\nTherefore, at turn 0, best to eat (3,2) immediately.\n\nThen proceed to (5,3).\n\nIn the sequence: turn 0: down to (3,2) eat\n\nThen from there, to go to (5,3), I need to go right and up.\n\nAs before: turn 1: right to (4,2)\n\nTurn 2: up to (4,3)\n\nTurn 3: right to (5,3) eat\n\nNow for turn 4 and beyond, I need to move to open space.\n\nFor example, from (5,3), after eating, positions [(5,3),(4,3),(4,2)]\n\nHead direction right.\n\nCan move up to (5,4) or right to (6,3)\n\n(5,4) is free, (6,3) free.\n\nSay move up to (5,4), turn 4.\n\nThen from (5,4), etc.\n\nBut since I need to output, and think ahead, but for the answer, I can provide for 5 turns.\n\nThe current turn is 0, and I need actions for turn 0,1,2,3,4,5 or something.\n\nBut let's specify.\n\nAlso, in the sequence, for turn 1, from (3,2) I moved right, but I could move left or down.\n\nIf I move down to (3,1), then I might go to (4,1), etc., but (5,3) is above, so less direct.\n\nFor example, from (3,2) down to (3,1), then to (4,1), then to (4,2), etc., longer to (5,3).\n\nSo better to go directly.\n\nSimilarly, left to (2,2) then to (2,1), but (1,1) bad, so not good.\n\nTherefore, the sequence I have is efficient.\n\nNow for turn 4: after turn 3, at (5,3), just ate, direction right.\n\nMove up to (5,4), no food.\n\nTurn 4: move up to (5,4), positions: head (5,4), body (5,3), tail (4,3)? Before: [(5,3),(4,3),(4,2)], head to (5,4), no eat, so S1 to (5,3), S2 to (4,3), so [(5,4),(5,3),(4,3)] tail at (4,3)\n\nDirection up.\n\nThen turn 5: from (5,4), can move up to (5,5), left to (4,4), right to (6,4) but (6,4) obstacle, cannot.\n\nDown to (5,3) but that's body, collision if move there.\n\nSo move up to (5,5) or left to (4,4).\n\n(5,5) free, no food.\n\n(4,4) free.\n\nSay move left to (4,4).\n\nBut I need to output the actions.\n\nSince the problem asks to think ahead, but for output, I'll provide for turns 0 to 5.\n\nIn the sequence, turn 0: D (down)\n\nTurn 1: R (right)\n\nTurn 2: U (up)\n\nTurn 3: R (right)\n\nThen turn 4: U (up) to (5,4)\n\nTurn 5: L (left) to (4,4) or U to (5,5), but to avoid potential issues, say L to (4,4).\n\nBut (4,4) is free.\n\nTo be safe.\n\nBut in the answer format, I need to write the actions.\n\nNow, about the tail reward danger: in this sequence, no issue, since no food on tail cells.\n\nAlso, all moves should be safe.\n\nAt turn 0, moving down to (3,2) is safe.\n\nTurn 1, right to (4,2) safe.\n\nTurn 2, up to (4,3) safe.\n\nTurn 3, right to (5,3) safe and eat.\n\nTurn 4, up to (5,4) safe.\n\nTurn 5, from (5,4), I can move up to (5,5) or left to (4,4), both safe.\n\nSay move left to (4,4) for example.\n\nBut I don't need to specify beyond, but for 5 turns, up to turn 5.\n\nCurrent turn t1=0, so turns 0 to 4 for 5 actions? Turn 0,1,2,3,4 is 5 turns.\n\nTurn 0: action for turn 0\n\nTurn 1: action for turn 1\n\n...\n\nUp to turn 4 for 5 actions.\n\nBut in the sequence, I have turn 0 to 3, then turn 4.\n\nFor turn 5, it's extra.\n\nBut I can include.\n\nThe answer format says \"Turn t1: action, Turn t1+1: action, ...\" without end, but probably for a few turns.\n\nSince it says \"think 5+ turns ahead\", I should provide for at least 5 moves.\n\nSo turns 0 to 4: 5 actions.\n\nTurn 0: D\n\nTurn 1: R\n\nTurn 2: U\n\nTurn 3: R\n\nTurn 4: U (to (5,4))\n\nThen for turn 5, I can add, but not necessary.\n\nIn the box.\n\nBut let's confirm the grid.\n\nAnother thing: at (4,3), when I moved to (4,3) at turn 2, it was empty, no issue.\n\nAnd (5,3) food eaten.\n\nNow, about (1,1): I avoid it, good.\n\nSo I think this is fine.\n</think>\nTo maximize the score while ensuring long-term survival, I have planned a sequence of moves for the next 5 turns (turns 0 to 4) based on the current state. The key considerations are:\n- **Immediate action**: Eat the positive food at (3,2) on turn 0 to gain +1 score and grow the snake, as it is safe and efficient.\n- **Subsequent actions**: Navigate toward the food at (5,3) while avoiding the dead-end food at (1,1), which poses a high risk of collision due to limited access (only reachable from (2,1), and eating it would trap the snake).\n- **Long-term survival**: After eating both accessible foods, move to open areas to avoid potential traps. The path avoids walls, obstacles, and reverse moves, and no tail reward danger exists as no food is on tail segments.\n- **Food life span**: All foods have a life span of 10 at turn 0, decreasing by 1 each turn. The food at (1,1) is ignored due to risk; (3,2) is eaten on turn 0 (life span 10 > 0); (5,3) is eaten on turn 3 (life span 7 > 0 at turn start).\n\n### Planned Moves (5 turns ahead):\n- **Turn 0 (current state)**: Move down (D) to (3,2) to eat the positive food. Snake grows to length 2: positions [(3,2), (3,3)], head direction down.\n- **Turn 1**: Move right (R) to (4,2). No food eaten; snake moves: positions [(4,2), (3,2)], head direction right.\n- **Turn 2**: Move up (U) to (4,3). No food eaten; snake moves: positions [(4,3), (4,2)], head direction up.\n- **Turn 3**: Move right (R) to (5,3) to eat the positive food. Snake grows to length 3: positions [(5,3), (4,3), (4,2)], head direction right.\n- **Turn 4**: Move up (U) to (5,4) to enter open space. No food eaten; snake moves: positions [(5,4), (5,3), (4,3)], head direction up.\n\n### Why this sequence?\n- **Score maximized**: Eats two positive foods (+2 score) by turn 3.\n- **Risks avoided**: \n  - (1,1) is not pursued due to dead-end risk.\n  - All moves are valid (no wall/obstacle collisions; no reverse moves; no body collisions).\n  - After turn 4, the snake is in a flexible position (head at (5,4)) to explore further (e.g., move left to (4,4) or up to (5,5) on turn 5).\n- **Efficiency**: Direct path to foods minimizes turns and leverages the snake's short length for maneuverability.\n\nThis plan prioritizes survival by avoiding (1,1) and positions the snake in the center for future opportunities.\n\n\\boxed{\nTurn 0: D (down)\nTurn 1: R (right)\nTurn 2: U (up)\nTurn 3: R (right)\nTurn 4: U (up)\n}",
+        "state": {
+            "snake": [
+                [
+                    2,
+                    3
+                ]
+            ],
+            "direction": "L",
+            "food": [
+                [
+                    1,
+                    1,
+                    9,
+                    1
+                ],
+                [
+                    3,
+                    2,
+                    9,
+                    1
+                ],
+                [
+                    5,
+                    3,
+                    9,
+                    1
+                ],
+                [
+                    4,
+                    1,
+                    10,
+                    1
+                ]
+            ],
+            "obstacles": [
+                [
+                    6,
+                    4
+                ],
+                [
+                    5,
+                    1
+                ],
+                [
+                    2,
+                    4
+                ],
+                [
+                    6,
+                    1
+                ],
+                [
+                    1,
+                    2
+                ],
+                [
+                    5,
+                    6
+                ],
+                [
+                    5,
+                    2
+                ],
+                [
+                    3,
+                    5
+                ]
+            ],
+            "game_turn": 1,
+            "terminal": false
+        },
+        "action": "R",
+        "original_state": "**Current Turn**: \\( t_1 = 1 \\)\n**Cells occupied by walls**:\n\t - Border Cells: x=0/x=7 or y=0/y=7.\n\t - Internal Obstacles: [(6, 4), (5, 1), (2, 4), (6, 1), (1, 2), (5, 6), (5, 2), (3, 5)]\n**Snake Positions**:[(2, 3)]\n**Snake Head Direction**: L\n**Food Positions, Life Span and Value**:\n\t- (1, 1, 9, 1)\n\t- (3, 2, 9, 1)\n\t- (5, 3, 9, 1)\n\t- (4, 1, 10, 1)\n"
+    },
+    {
+        "step": 2,
+        "score": -1,
+        "thinking": "Still thinking...",
+        "state": {
+            "snake": [
+                [
+                    1,
+                    3
+                ]
+            ],
+            "direction": "L",
+            "food": [
+                [
+                    1,
+                    1,
+                    8,
+                    1
+                ],
+                [
+                    3,
+                    2,
+                    8,
+                    1
+                ],
+                [
+                    5,
+                    3,
+                    8,
+                    1
+                ],
+                [
+                    4,
+                    1,
+                    9,
+                    1
+                ]
+            ],
+            "obstacles": [
+                [
+                    6,
+                    4
+                ],
+                [
+                    5,
+                    1
+                ],
+                [
+                    2,
+                    4
+                ],
+                [
+                    6,
+                    1
+                ],
+                [
+                    1,
+                    2
+                ],
+                [
+                    5,
+                    6
+                ],
+                [
+                    5,
+                    2
+                ],
+                [
+                    3,
+                    5
+                ]
+            ],
+            "game_turn": 2,
+            "terminal": false
+        },
+        "action": "S",
+        "original_state": "**Current Turn**: \\( t_1 = 2 \\)\n**Cells occupied by walls**:\n\t - Border Cells: x=0/x=7 or y=0/y=7.\n\t - Internal Obstacles: [(6, 4), (5, 1), (2, 4), (6, 1), (1, 2), (5, 6), (5, 2), (3, 5)]\n**Snake Positions**:[(1, 3)]\n**Snake Head Direction**: L\n**Food Positions, Life Span and Value**:\n\t- (1, 1, 8, 1)\n\t- (3, 2, 8, 1)\n\t- (5, 3, 8, 1)\n\t- (4, 1, 9, 1)\n"
+    }
+]

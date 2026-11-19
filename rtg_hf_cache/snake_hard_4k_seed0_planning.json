@@ -1,0 +1,230 @@
+[
+    {
+        "step": 0,
+        "score": 0,
+        "thinking": "Still thinking...",
+        "state": {
+            "snake": [
+                [
+                    3,
+                    3
+                ]
+            ],
+            "direction": "L",
+            "food": [
+                [
+                    4,
+                    5,
+                    10,
+                    1
+                ],
+                [
+                    3,
+                    6,
+                    10,
+                    1
+                ],
+                [
+                    2,
+                    6,
+                    10,
+                    1
+                ]
+            ],
+            "obstacles": [
+                [
+                    5,
+                    6
+                ],
+                [
+                    1,
+                    4
+                ],
+                [
+                    4,
+                    4
+                ],
+                [
+                    2,
+                    4
+                ],
+                [
+                    6,
+                    3
+                ],
+                [
+                    5,
+                    1
+                ],
+                [
+                    1,
+                    5
+                ],
+                [
+                    3,
+                    2
+                ]
+            ],
+            "game_turn": 0,
+            "terminal": false
+        },
+        "action": "S",
+        "original_state": "**Current Turn**: \\( t_1 = 0 \\)\n**Cells occupied by walls**:\n\t - Border Cells: x=0/x=7 or y=0/y=7.\n\t - Internal Obstacles: [(5, 6), (1, 4), (4, 4), (2, 4), (6, 3), (5, 1), (1, 5), (3, 2)]\n**Snake Positions**:[(3, 3)]\n**Snake Head Direction**: L\n**Food Positions, Life Span and Value**:\n\t- (4, 5, 10, 1)\n\t- (3, 6, 10, 1)\n\t- (2, 6, 10, 1)\n"
+    },
+    {
+        "step": 1,
+        "score": 0,
+        "thinking": "Still thinking...",
+        "state": {
+            "snake": [
+                [
+                    2,
+                    3
+                ]
+            ],
+            "direction": "L",
+            "food": [
+                [
+                    4,
+                    5,
+                    9,
+                    1
+                ],
+                [
+                    3,
+                    6,
+                    9,
+                    1
+                ],
+                [
+                    2,
+                    6,
+                    9,
+                    1
+                ],
+                [
+                    4,
+                    6,
+                    10,
+                    1
+                ]
+            ],
+            "obstacles": [
+                [
+                    5,
+                    6
+                ],
+                [
+                    1,
+                    4
+                ],
+                [
+                    4,
+                    4
+                ],
+                [
+                    2,
+                    4
+                ],
+                [
+                    6,
+                    3
+                ],
+                [
+                    5,
+                    1
+                ],
+                [
+                    1,
+                    5
+                ],
+                [
+                    3,
+                    2
+                ]
+            ],
+            "game_turn": 1,
+            "terminal": false
+        },
+        "action": "S",
+        "original_state": "**Current Turn**: \\( t_1 = 1 \\)\n**Cells occupied by walls**:\n\t - Border Cells: x=0/x=7 or y=0/y=7.\n\t - Internal Obstacles: [(5, 6), (1, 4), (4, 4), (2, 4), (6, 3), (5, 1), (1, 5), (3, 2)]\n**Snake Positions**:[(2, 3)]\n**Snake Head Direction**: L\n**Food Positions, Life Span and Value**:\n\t- (4, 5, 9, 1)\n\t- (3, 6, 9, 1)\n\t- (2, 6, 9, 1)\n\t- (4, 6, 10, 1)\n"
+    },
+    {
+        "step": 2,
+        "score": -1,
+        "thinking": "Still thinking...",
+        "state": {
+            "snake": [
+                [
+                    1,
+                    3
+                ]
+            ],
+            "direction": "L",
+            "food": [
+                [
+                    4,
+                    5,
+                    8,
+                    1
+                ],
+                [
+                    3,
+                    6,
+                    8,
+                    1
+                ],
+                [
+                    2,
+                    6,
+                    8,
+                    1
+                ],
+                [
+                    4,
+                    6,
+                    9,
+                    1
+                ]
+            ],
+            "obstacles": [
+                [
+                    5,
+                    6
+                ],
+                [
+                    1,
+                    4
+                ],
+                [
+                    4,
+                    4
+                ],
+                [
+                    2,
+                    4
+                ],
+                [
+                    6,
+                    3
+                ],
+                [
+                    5,
+                    1
+                ],
+                [
+                    1,
+                    5
+                ],
+                [
+                    3,
+                    2
+                ]
+            ],
+            "game_turn": 2,
+            "terminal": false
+        },
+        "action": "S",
+        "original_state": "**Current Turn**: \\( t_1 = 2 \\)\n**Cells occupied by walls**:\n\t - Border Cells: x=0/x=7 or y=0/y=7.\n\t - Internal Obstacles: [(5, 6), (1, 4), (4, 4), (2, 4), (6, 3), (5, 1), (1, 5), (3, 2)]\n**Snake Positions**:[(1, 3)]\n**Snake Head Direction**: L\n**Food Positions, Life Span and Value**:\n\t- (4, 5, 8, 1)\n\t- (3, 6, 8, 1)\n\t- (2, 6, 8, 1)\n\t- (4, 6, 9, 1)\n"
+    }
+]
