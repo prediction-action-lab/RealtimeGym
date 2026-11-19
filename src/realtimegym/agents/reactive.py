@@ -1,7 +1,8 @@
+import os
 import re
 from typing import Any, Optional
 
-from .base import BaseAgent, extract_boxed
+from .base import BaseAgent, budget_line, extract_boxed
 
 
 class ReactiveAgent(BaseAgent):
@@ -23,24 +24,21 @@ class ReactiveAgent(BaseAgent):
         assert self.current_observation is not None and timeout is not None
         budget = timeout
         observation = self.current_observation
-        game_turn = observation["game_turn"]
         prompt_gen = self.prompts.state_to_description(
             observation["state"], mode="reactive"
         )
+        # The agent is otherwise never told its budget -- internal_budget is
+        # applied as an API max_tokens cap only -- so it cannot allocate its
+        # thinking. Opt in with RTG_ANNOUNCE_BUDGET=1.
+        if os.environ.get("RTG_ANNOUNCE_BUDGET") == "1":
+            prompt_gen += budget_line(self.internal_budget)
         messages = [{"role": "user", "content": prompt_gen}]
         text, token_num = self.reactive_inference(messages, budget)
-        print(f"\n[REACTIVE PROMPT] turn={game_turn}:")
-        print(messages[-1]["content"])
-        print("[END REACTIVE PROMPT]\n")
-        print(f"\n[REACTIVE RESPONSE] turn={game_turn}, tokens={token_num}:")
-        print(text)
-        print("[END REACTIVE RESPONSE]\n")
         self.action = re.sub(
             r"[^" + self.prompts.ALL_ACTIONS + "]", "", extract_boxed(text)
         )
         if self.action == "":
             self.action = self.prompts.DEFAULT_ACTION
-        print(f"[PARSED ACTION] turn={game_turn}, action={self.action}")
         if self.log_thinking:
             self.logs["plan"].append("N/A")
             self.logs["model1_prompt"].append(messages[-1]["content"])

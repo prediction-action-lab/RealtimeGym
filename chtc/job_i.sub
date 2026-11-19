@@ -1,0 +1,35 @@
+# Python build file
+
+universe = container
+container_image = docker://verlai/verl:vllm012.latest
+
+executable = job.sh
+arguments = 0 0
+
+log = interactive.log
+output = interactive.out
+error = interactive.err
+
+stream_output = true
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = .env, ../RealtimeGym.tar.gz
+transfer_output_files = RealtimeGym/results_$(Process).tar.gz
+transfer_output_remaps  = "RealtimeGym/results_$(Process).tar.gz=results_$(Process).tar.gz"
+
+# Compute resources
+request_cpus = 8
+request_memory = 160GB
+request_disk = 200GB
+
+# Extra GPU settings
+request_gpus = 1
+Requirements = (Target.CUDADriverVersion >= 12.1) && (Target.HasCHTCStaging == true) && (Target.GPUs_GlobalMemoryMb > 70000) && (Target.Machine != "gpulab2004.chtc.wisc.edu")
+
+# change to true if *not* using staging for checkpoints and interested in accessing GPUs beyond CHTC
++WantGPULab = false
++WantFlocking = false
++WantGlidein = false
++GPUJobLength = "short"
+
+queue 1

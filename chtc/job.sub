@@ -1,0 +1,40 @@
+# Non-interactive evaluation job. Submit with: bash submit.sh <run_name>
+# (submit.sh supplies results_dir and log_dir).
+
+universe = container
+container_image = docker://verlai/verl:vllm012.latest
+
+# initial_dir is two levels below this submit file, so input paths must be
+# expressed relative to that directory.
+executable  = ../../job.sh
+initial_dir = $(results_dir)
+arguments   = $(Process) 0
+
+log         = ../../$(log_dir)/$(Process).log
+output      = ../../$(log_dir)/$(Process).out
+error       = ../../$(log_dir)/$(Process).err
+
+stream_output           = true
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files    = ../../.env, ../../../RealtimeGym.tar.gz
+transfer_output_files   = RealtimeGym/results_$(Process).tar.gz
+transfer_output_remaps  = "RealtimeGym/results_$(Process).tar.gz=results_$(Process).tar.gz"
+
+# Compute resources
+request_cpus            = 8
+request_memory          = 200GB
+request_disk            = 200GB
+#chtc_want_el8           = true
+
+# Extra GPU settings
+request_gpus            = 1
+requirements            = (Target.HasCHTCStaging == true) && (Target.CUDADriverVersion >= 12.1) && (Target.GPUs_GlobalMemoryMb > 40000)
+
+# change to true if *not* using staging for checkpoints and interested in accessing GPUs beyond CHTC
++WantGPULab = true
++WantFlocking           = false
++WantGlidein            = false
++GPUJobLength           = "long"
+
+queue 1
